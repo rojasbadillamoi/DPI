@@ -1,0 +1,105 @@
+# Archivo de citación en formato CFF (Citation File Format).
+#
+# GitHub lo lee y muestra un botón «Cite this repository»; Zenodo lo usa para
+# rellenar los metadatos del DOI. Tiene que estar en la raíz del repositorio y
+# llamarse exactamente CITATION.cff.
+#
+
+cff-version: 1.2.0
+message: "Si usas este programa en un trabajo publicado, por favor cítalo así."
+type: software
+
+title: "DPI — Dendro Pixel Interface"
+abstract: >-
+  Programa de escritorio para la medición de anillos de crecimiento sobre
+  imagen digitalizada, la co-datación de series dendrocronológicas y el
+  control de calidad del fechado. Incluye un localizador del año donde se
+  rompe la datación, control de calidad compatible con COFECHA, y
+  construcción de cronologías con estadísticos de señal común.
+
+authors:
+  - family-names: "Rojas-Badilla"
+    given-names: "Moisés E."
+    # orcid: "https://orcid.org/0000-0002-1101-2280"
+    # afiliación al momento de publicar
+    affiliation: ""
+
+version: "2.3.0"
+# la fecha del día en que publiques la versión
+date-released: "2026-09-15"
+
+license: GPL-3.0-or-later
+repository-code: "https://github.com/rojasbadillamoi/DPI"
+url: "https://github.com/rojasbadillamoi/DPI"
+
+keywords:
+  - dendrochronology
+  - dendrocronología
+  - tree rings
+  - crossdating
+  - cofechado
+  - COFECHA
+  - ring width measurement
+  - Python
+  - PyQt6
+
+# Trabajos en los que se apoya el programa. No son coautores: son las fuentes
+# de los métodos implementados, y corresponde declararlas.
+references:
+  - type: article
+    authors:
+      - family-names: "Holmes"
+        given-names: "Richard L."
+    title: "Computer-assisted quality control in tree-ring dating and measurement"
+    journal: "Tree-Ring Bulletin"
+    volume: 43
+    start: 69
+    end: 78
+    year: 1983
+    notes: >-
+      Programa COFECHA. El control de calidad de DPI reimplementa su
+      procedimiento de forma independiente, a partir de este artículo, del
+      manual de la Dendrochronology Program Library y de la comparación con
+      salidas reales. No deriva de su código fuente.
+
+  - type: article
+    authors:
+      - family-names: "Cook"
+        given-names: "Edward R."
+      - family-names: "Peters"
+        given-names: "Kenneth"
+    title: >-
+      The smoothing spline: a new approach to standardizing forest interior
+      tree-ring width series for dendroclimatic studies
+    journal: "Tree-Ring Bulletin"
+    volume: 41
+    start: 45
+    end: 53
+    year: 1981
+    notes: >-
+      Spline cúbico de suavizado con respuesta en frecuencia declarada, usado
+      para la estandarización.
+
+  - type: article
+    authors:
+      - family-names: "Grissino-Mayer"
+        given-names: "Henri D."
+    title: >-
+      Evaluating crossdating accuracy: a manual and tutorial for the computer
+      program COFECHA
+    journal: "Tree-Ring Research"
+    volume: 57
+    issue: 2
+    start: 205
+    end: 221
+    year: 2001
+
+  - type: software
+    authors:
+      - family-names: "Bunn"
+        given-names: "Andrew G."
+    title: "dplR: Dendrochronology Program Library in R"
+    notes: >-
+      Usado como referencia publicada para verificar equivalencias numéricas
+      (spline de Cook, media biponderada de Tukey, Gleichläufigkeit, precisión
+      del formato Tucson). DPI no incorpora su código.

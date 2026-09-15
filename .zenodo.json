@@ -1,0 +1,26 @@
+{
+  "_comentario": "Metadatos para Zenodo. Zenodo prefiere este archivo por sobre lo que deduce del repositorio. REVISA los campos marcados antes de publicar.",
+  "title": "DPI — Dendro Pixel Interface",
+  "description": "<p>Programa de escritorio para la medici\u00f3n de anillos de crecimiento sobre imagen digitalizada, la co-dataci\u00f3n de series dendrocronol\u00f3gicas y el control de calidad del fechado.</p><p>Incluye un localizador del a\u00f1o donde se rompe la dataci\u00f3n, control de calidad compatible con COFECHA, y construcci\u00f3n de cronolog\u00edas con estad\u00edsticos de se\u00f1al com\u00fan (Rbar entre \u00e1rboles, EPS, SSS).</p>",
+  "license": "GPL-3.0-or-later",
+  "upload_type": "software",
+  "access_right": "open",
+  "language": "spa",
+  "creators": [
+    {
+      "name": "Rojas-Badilla, Mois\u00e9s E.",
+      "affiliation": "Universidad de La Frontera, Temuco, Chile"
+    }
+  ],
+  "keywords": [
+    "dendrochronology",
+    "dendrocronolog\u00eda",
+    "tree rings",
+    "crossdating",
+    "cofechado",
+    "COFECHA",
+    "ring width",
+    "Python",
+    "PyQt6"
+  ]
+}

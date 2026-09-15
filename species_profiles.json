@@ -1,0 +1,29 @@
+{
+  "Conífera (defecto)": {
+    "canal": "gray",
+    "invertir": false,
+    "suavizado": 7,
+    "prominencia": 12.0,
+    "anchura_min_px": 15,
+    "anchura_max_px": 3000,
+    "banda_px": 10
+  },
+  "Nothomyrcia fernandeziana": {
+    "canal": "gray",
+    "invertir": false,
+    "suavizado": 7,
+    "prominencia": 12.0,
+    "anchura_min_px": 15,
+    "anchura_max_px": 3000,
+    "banda_px": 20
+  },
+  "Cipres": {
+    "canal": "gray",
+    "invertir": false,
+    "suavizado": 7,
+    "prominencia": 5.0,
+    "anchura_min_px": 15,
+    "anchura_max_px": 3000,
+    "banda_px": 6
+  }
+}

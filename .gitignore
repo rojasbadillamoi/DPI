@@ -1,0 +1,43 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ── Empaquetado ───────────────────────────────────────────────────────
+build/
+dist/
+*.spec.bak
+Output/
+
+# ── Registros y estado local ──────────────────────────────────────────
+# crash_log.txt trae rutas absolutas de la máquina donde ocurrió el error:
+# no debe subirse.
+crash_log.txt
+*.log
+
+# ── Archivos laterales que genera el programa ─────────────────────────
+*.anom.json
+
+# ── Datos de trabajo ──────────────────────────────────────────────────
+# Las mediciones y las imágenes de muestras no van al repositorio: pesan,
+# cambian seguido y muchas veces no son públicas todavía. Si quieres incluir
+# un ejemplo, ponlo en ejemplos/ y quítale el ignore.
+*.rwl
+*.RWL
+*.crn
+*.pos
+*.wid
+*.tif
+*.tiff
+*.jpg
+*.jpeg
+!dpi.ico
+!ejemplos/**
+
+# ── Sistema operativo ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
