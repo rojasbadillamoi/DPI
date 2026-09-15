@@ -311,11 +311,11 @@ Tabla detallada:
 
 ### Clonar e instalar
 
-```bash
-git clone https://github.com/tu_usuario/dpi-dendro.git
-cd dpi-dendro
+```
+git clone https://github.com/rojasbadillamoi/DPI.git
+cd DPI
 pip install -r requirements.txt
-python main_anillos.py
+python3 run_dpi.py
 ```
 
 ---
@@ -604,8 +604,9 @@ Todos los valores globales están centralizados en `constantes.py`. Modificar es
 | `TOLERANCIA_CLICK_PUNTO` | 15 px | Radio de selección de un punto existente (en píxeles de pantalla) |
 | `TOLERANCIA_CLICK_SEGMENTO` | 20 px | Radio para detectar un segmento al insertar un punto |
 | `VENTANA_COFECHADO_DEFECTO` | 40 años | Ventana deslizante de co-datación |
-| `OVERLAP_MINIMO_ANALISIS` | 20 años | Solapamiento mínimo para calcular r |
-| `OVERLAP_MINIMO_GRAFICO` | 10 años | Solapamiento mínimo en el motor split-window |
+| `OVERLAP_MINIMO_ANALISIS` | 10 años | Solapamiento mínimo para calcular r |
+| `OVERLAP_MINIMO_GRAFICO` | 5 años | Solapamiento mínimo en el motor split-window |
+| `OVERLAP_MINIMO_FLOTANTE` | 50 años | Solapamiento mínimo en series flotantes|
 | `RANGO_SHIFT_SIMULADOR` | ±5 años | Rango de búsqueda del simulador de anillos faltantes |
 | `UMBRAL_ANCLA_DEFECTO` | 0.40 | r mínimo para que un segmento se considere bien cofechado |
 | `UMBRAL_DESFASE_DEFECTO` | 0.25 | r máximo para que un segmento se marque como desfasado |
