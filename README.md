@@ -673,7 +673,7 @@ equivalencias numéricas. DPI no incorpora su código.
 
 ## Licencia
 
-Copyright © 2024 — Los autores de DPI
+Copyright © 2026 — Moisés E. Rojas-Badilla
 
 Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos de la **GNU General Public License** publicada por la Free Software Foundation, ya sea la versión 3 de la Licencia, o (a tu elección) cualquier versión posterior.
 
