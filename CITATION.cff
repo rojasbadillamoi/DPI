@@ -25,6 +25,7 @@ authors:
     affiliation: ""
 
 version: "2.3.0"
+doi: "10.5281/zenodo.22780901"
 # la fecha del día en que publiques la versión
 date-released: "2026-09-15"
 
