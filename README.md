@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/UI-PyQt6-green.svg)](https://riverbankcomputing.com/software/pyqt/)
 [![Versión](https://img.shields.io/badge/versión-2.3.0-orange.svg)](CHANGELOG.md)
-<!-- Tras publicar en Zenodo, pega aquí la insignia del DOI de concepto. -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22780901.svg)](https://doi.org/10.5281/zenodo.22780901)
 
 ---
 
@@ -641,12 +641,10 @@ Si usas DPI en un trabajo publicado, por favor cítalo. El archivo
 `CITATION.cff` trae los datos en formato legible por máquina, y GitHub muestra
 el botón **Cite this repository** a partir de él.
 
-<!-- Tras publicar en Zenodo, reemplaza XXXXXXX por el DOI de CONCEPTO,
-     que es el que apunta siempre a la versión más reciente. -->
 
 ```
-Rojas-Badilla, M.E. (2026). DPI — Dendro Pixel Interface (v2.3.0).
-Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX
+Rojas-Badilla, M.E. (2026). DPI — Dendro Pixel Interface.
+Zenodo. https://doi.org/10.5281/zenodo.22780901
 ```
 
 ### Sobre los métodos implementados
