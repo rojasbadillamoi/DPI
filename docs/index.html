@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es" data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DPI — Dendro Pixel Interface. Software libre para medir anillos de árboles, co-datar series y construir cronologías. Descargas, instalación y citación.">
+  <meta name="theme-color" content="#f7f2e7">
+  <meta name="author" content="Moisés E. Rojas-Badilla">
+  <meta property="og:title" content="DPI — Dendro Pixel Interface">
+  <meta property="og:description" content="De la imagen a la cronología. Medición, co-datación y control de calidad en una aplicación de escritorio de código abierto.">
+  <meta property="og:type" content="website">
+  <title>DPI — Dendro Pixel Interface</title>
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="canonical" href="https://rojasbadillamoi.github.io/DPI/">
+  <meta property="og:url" content="https://rojasbadillamoi.github.io/DPI/">
+  <meta property="og:image" content="https://rojasbadillamoi.github.io/DPI/assets/dpi-logo.webp">
+  <meta name="color-scheme" content="light dark"><script id="theme-init">/* Se aplica antes de dibujar la página para respetar la elección guardada. */
+(() => {
+  let preference = 'system';
+  try {
+    const saved = window.localStorage.getItem('moicedrus-theme');
+    if (saved === 'light' || saved === 'dark') preference = saved;
+  } catch { /* El tema automático funciona también sin almacenamiento. */ }
+  document.documentElement.dataset.theme = preference;
+})();
+</script><link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body class="page-dpi" data-repo="DPI" data-fallback-version="v2.3.0"><a class="skip-link" href="#contenido">Saltar al contenido</a><header class="site-header"><div class="container masthead"><a data-site="MoiCedrus" class="brand" href="https://rojasbadillamoi.github.io/"><img src="assets/moicedrus-emblema.webp" width="153" height="97" alt=""><span><strong>MoiCedrus</strong><span class="brand-name">CIENCIA EN LOS ANILLOS</span></span></a><button id="menu-toggle" class="menu-toggle" type="button" aria-controls="page-nav" aria-expanded="false">Menú</button><nav id="page-nav" aria-label="Navegación de la página"><a href="#herramientas">Herramientas</a><a href="#capturas">Capturas</a><a href="#descargas">Descargas</a><a href="#contacto">Contacto</a></nav><div class="header-aside"><img class="seal" src="assets/ornamento-seal.svg" width="42" height="42" alt=""><p class="header-motto">Los árboles<br>guardan tiempo.<br>Nosotros lo leemos.</p><label class="theme-control" id="theme-control" hidden><span>Tema</span><select id="theme-selector" aria-label="Tema de la página"><option value="system">Automático</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></div></div></header><main id="contenido">
+    <div class="container breadcrumb"><a data-site="MoiCedrus" class="" href="https://rojasbadillamoi.github.io/">MoiCedrus</a><span aria-hidden="true">/</span><span>DPI</span></div><section class="hero product-hero container" id="inicio" aria-labelledby="titulo"><div class="hero-copy"><p class="eyebrow">DPI · SOFTWARE LIBRE</p><h1 id="titulo">De la imagen<br> a la cronología.</h1><p class="hero-lead">Mide anillos de árboles, co-data tus series y revisa la calidad del fechado en un mismo lugar.</p><p class="hero-description">DPI reúne las herramientas para trabajar con tus muestras, desde la imagen digitalizada hasta una cronología con estadísticos de señal común.</p><div class="hero-actions">
+          <a id="primary-download" class="button button-primary" href="https://github.com/rojasbadillamoi/DPI/releases/download/v2.3.0/DPI_Setup_v2.3.0.exe"><span id="primary-download-label">Descargar para Windows</span><span aria-hidden="true">↓</span></a>
+          <a class="text-link" href="#capturas">Ver el programa <span aria-hidden="true">↗</span></a>
+        </div><p id="hero-release" class="hero-meta">v2.3.0 · Instalador .exe · 99,9 MiB</p><p class="hero-note">Una herramienta para leer el tiempo en la madera.</p></div><div class="hero-art"><img class="hero-emblem" src="assets/dpi-logo.webp" alt="Logotipo original de DPI" width="535" height="535" fetchpriority="high"><p class="hero-words"><span>MEDIR</span><span>COFECHAR</span><span>COMPRENDER</span></p></div></section>
+
+    <div class="facts-strip">
+      <div class="container facts-inner">
+        <p><span class="fact-label">Licencia</span><strong>GPL-3.0-or-later</strong></p>
+        <p><span class="fact-label">Intercambio de datos</span><strong>Tucson · CSV · Excel</strong></p>
+        <p><span class="fact-label">Código fuente</span><strong>Python · PyQt6</strong></p>
+        <a href="https://doi.org/10.5281/zenodo.22780901"><span class="fact-label">Archivo científico</span><strong>Disponible en Zenodo <span aria-hidden="true">↗</span></strong></a>
+      </div>
+    </div>
+
+<section id="capturas" class="section container gallery-section" aria-labelledby="capturas-titulo"><div class="section-heading"><div><p class="eyebrow">CAPTURAS DEL PROGRAMA</p><h2 id="capturas-titulo">El programa, por dentro.</h2></div><p>De los límites de anillo al diagnóstico de la colección. Amplía cada captura para recorrer la interfaz.</p></div><div class="gallery-grid"><figure class="gallery-card featured"><a class="gallery-link" href="assets/dpi-medicion.webp" data-lightbox data-title="Medir sobre la imagen" data-caption="Límites, radios y series en un mismo espacio." aria-label="Ampliar: Medir sobre la imagen"><img src="assets/dpi-medicion.webp" width="1441" height="888" alt="DPI con dos vistas de una sección de madera, límites de anillos y curvas de crecimiento." loading="lazy" decoding="async"><span class="gallery-expand" aria-hidden="true">Ampliar ↗</span></a><figcaption><strong>Medir sobre la imagen</strong><span>Límites, radios y series en un mismo espacio.</span></figcaption></figure><figure class="gallery-card"><a class="gallery-link" href="assets/dpi-codatacion.webp" data-lightbox data-title="Comparar y cofechar" data-caption="Series y correlaciones para revisar el fechado." aria-label="Ampliar: Comparar y cofechar"><img src="assets/dpi-codatacion.webp" width="1486" height="839" alt="Panel de co-datación de DPI con series superpuestas y correlación móvil." loading="lazy" decoding="async"><span class="gallery-expand" aria-hidden="true">Ampliar ↗</span></a><figcaption><strong>Comparar y cofechar</strong><span>Series y correlaciones para revisar el fechado.</span></figcaption></figure><figure class="gallery-card"><a class="gallery-link" href="assets/dpi-cofecha.webp" data-lightbox data-title="Revisar la colección" data-caption="Diagnóstico de tipo COFECHA." aria-label="Ampliar: Revisar la colección"><img src="assets/dpi-cofecha.webp" width="1300" height="734" alt="Informe de control de calidad del fechado dentro de DPI." loading="lazy" decoding="async"><span class="gallery-expand" aria-hidden="true">Ampliar ↗</span></a><figcaption><strong>Revisar la colección</strong><span>Diagnóstico de tipo COFECHA.</span></figcaption></figure><figure class="gallery-card"><a class="gallery-link" href="assets/dpi-cronologia.webp" data-lightbox data-title="Construir la cronología" data-caption="Estandarización y señal común." aria-label="Ampliar: Construir la cronología"><img src="assets/dpi-cronologia.webp" width="1292" height="838" alt="Panel de construcción de cronologías y gráficos de las series." loading="lazy" decoding="async"><span class="gallery-expand" aria-hidden="true">Ampliar ↗</span></a><figcaption><strong>Construir la cronología</strong><span>Estandarización y señal común.</span></figcaption></figure><figure class="gallery-card"><a class="gallery-link" href="assets/dpi-skeleton.webp" data-lightbox data-title="Explorar el skeleton plot" data-caption="Comparación visual del patrón de crecimiento." aria-label="Ampliar: Explorar el skeleton plot"><img src="assets/dpi-skeleton.webp" width="1300" height="734" alt="Diagrama de esqueleto digital con barras que representan anillos estrechos." loading="lazy" decoding="async"><span class="gallery-expand" aria-hidden="true">Ampliar ↗</span></a><figcaption><strong>Explorar el skeleton plot</strong><span>Comparación visual del patrón de crecimiento.</span></figcaption></figure></div><p class="gallery-source">Capturas compartidas en la presentación a la comunidad dendrocronológica de América Latina · septiembre de 2026.</p></section>
+    <section class="section container" id="herramientas" aria-labelledby="herramientas-titulo">
+      <div class="section-heading">
+        <div><p class="eyebrow">DEL TARUGO A LA SERIE</p><h2 id="herramientas-titulo">Tu flujo de trabajo,<br> en una sola aplicación.</h2></div>
+        <p>Para trabajar con secciones transversales, tarugos y tablillas. La revisión visual de la muestra acompaña cada decisión de fechado.</p>
+      </div>
+      <div class="features">
+        <article class="feature"><span class="feature-number">01 / MEDIR</span><h3>Medición sobre imágenes</h3><p>Calibra la escala, marca los límites de los anillos y trabaja con varios radios. Edita puntos, registra anomalías y conserva tu progreso.</p><p class="feature-note">PNG, JPG y TIFF · Importación de .pos</p></article>
+        <article class="feature"><span class="feature-number">02 / COMPARAR</span><h3>Co-datación visual</h3><p>Compara tus series con una referencia y explora la correlación en ventanas móviles para encontrar segmentos que necesitan revisión.</p><p class="feature-note">Series .rwl y referencias .wid</p></article>
+        <article class="feature"><span class="feature-number">03 / REVISAR</span><h3>Localizador de quiebres</h3><p>Explora posibles anillos faltantes o sobrantes, el rango del desfase y los años que conviene revisar primero sobre la muestra.</p><p class="feature-note">Diagnóstico e incertidumbre del fechado</p></article>
+        <article class="feature"><span class="feature-number">04 / VERIFICAR</span><h3>Control de calidad</h3><p>Examina un informe de siete partes de tipo COFECHA. Contrasta segmentos, correlaciones y estadísticos para apoyar el control del fechado.</p><p class="feature-note">Implementación independiente</p></article>
+        <article class="feature"><span class="feature-number">05 / CONSTRUIR</span><h3>Cronologías y señal común</h3><p>Construye cronologías crudas, estándar y residuales. Evalúa Rbar entre árboles, EPS y SSS para describir la señal de tu colección.</p><p class="feature-note">Estandarización y agregación de series</p></article>
+        <article class="feature"><span class="feature-number">06 / EXPLORAR</span><h3>Más allá del ancho</h3><p>Trabaja con intensidad de madera, límites de leño temprano y tardío, detección asistida de anillos y estimación de médula faltante.</p><p class="feature-note">Herramientas complementarias de medición</p></article>
+      </div>
+      <div class="section-footer"><span>Los procedimientos y sus alcances se describen en la documentación del proyecto.</span><a class="text-link" href="https://github.com/rojasbadillamoi/DPI#readme">Leer la documentación <span aria-hidden="true">↗</span></a></div>
+    </section>
+
+    <section class="downloads-section" id="descargas" aria-labelledby="descargas-titulo">
+      <div class="container section">
+        <div class="section-heading">
+          <div><p class="eyebrow">EMPIEZA A TRABAJAR</p><h2 id="descargas-titulo">Descarga DPI.</h2></div>
+          <div class="release-summary"><span class="release-badge" id="release-version">v2.3.0</span><p id="release-status" role="status">Versión incluida en esta página. <a href="https://github.com/rojasbadillamoi/DPI/releases/latest">Verificar en GitHub</a>.</p></div>
+        </div>
+        <div class="download-layout">
+          <div id="release-assets" class="release-assets">
+            <article class="download-card">
+              <div class="card-top"><span class="platform-mark" aria-hidden="true">W</span><span class="file-kind">INSTALADOR</span></div>
+              <h3>Windows</h3><p class="asset-name">DPI_Setup_v2.3.0.exe</p>
+              <p class="download-description">Instala DPI y ábrelo desde el menú de aplicaciones.</p>
+              <p class="asset-meta">99,9 MiB · v2.3.0</p>
+              <a class="button button-primary download-button" href="https://github.com/rojasbadillamoi/DPI/releases/download/v2.3.0/DPI_Setup_v2.3.0.exe">Descargar .exe <span aria-hidden="true">↓</span></a>
+            </article>
+          </div>
+          <article class="download-card source-card">
+            <div class="card-top"><span class="platform-mark code-mark" aria-hidden="true">&lt;/&gt;</span><span class="file-kind">CÓDIGO FUENTE</span></div>
+            <h3>Python</h3><p class="asset-name">Linux · macOS · Windows</p>
+            <p class="download-description">Ejecuta DPI desde el código fuente siguiendo los requisitos del proyecto.</p>
+            <p class="asset-meta">Python 3.10 o superior + dependencias</p>
+            <a id="source-download" class="button button-secondary download-button" href="https://github.com/rojasbadillamoi/DPI/archive/refs/tags/v2.3.0.zip">Descargar código (.zip) <span aria-hidden="true">↓</span></a>
+            <a class="small-link" href="#instalar-fuente">Ver instrucciones de instalación</a>
+          </article>
+        </div>
+        <noscript><p class="notice">JavaScript está desactivado. Los enlaces de v2.3.0 siguen disponibles; consulta GitHub para comprobar si existe una versión más reciente.</p></noscript>
+        <div class="section-footer"><span>Todos los archivos se descargan desde el repositorio oficial de DPI.</span><a id="release-link" class="text-link" href="https://github.com/rojasbadillamoi/DPI/releases">Versiones y notas de cambios <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+
+    <section class="section container install-section" id="instalacion" aria-labelledby="instalacion-titulo">
+      <div class="install-intro"><p class="eyebrow">PRIMEROS PASOS</p><h2 id="instalacion-titulo">Instala.<br> Abre tu muestra.<br> Empieza a medir.</h2><p>La documentación incluye calibración, medición, formatos de archivo y atajos de teclado.</p><a class="text-link" href="https://github.com/rojasbadillamoi/DPI#uso-rápido">Guía de uso <span aria-hidden="true">↗</span></a></div>
+      <div class="install-methods">
+        <details open><summary><span>Con el instalador de Windows</span><span class="details-symbol" aria-hidden="true">+</span></summary><div class="details-body"><ol class="install-steps"><li>Descarga el archivo <strong>.exe</strong> de la sección anterior.</li><li>Ejecuta el instalador y sigue las indicaciones.</li><li>Abre <strong>DPI</strong> y carga una imagen para calibrar la escala y comenzar.</li></ol><p class="muted">El instalador incluye el entorno necesario para ejecutar el programa.</p></div></details>
+        <details id="instalar-fuente"><summary><span>Desde el código fuente · Linux y macOS</span><span class="details-symbol" aria-hidden="true">+</span></summary><div class="details-body"><p>Necesitas Python 3.10 o superior y soporte para entornos virtuales. Descarga y descomprime el código; abre una terminal dentro de la carpeta que contiene <code>run_dpi.py</code>.</p><div class="code-block"><div class="code-heading"><span>Terminal</span><button type="button" class="copy-button" data-copy="install-command" hidden>Copiar comandos</button></div><pre><code id="install-command">python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python run_dpi.py</code></pre></div><p>En Linux, puedes añadir DPI al menú de aplicaciones ejecutando una vez:</p><pre class="single-command"><code>.venv/bin/python instalar_lanzador_linux.py</code></pre><p class="muted">En Ubuntu y Debian, si falta el soporte de entornos virtuales, instala el paquete <code>python3-venv</code>. Consulta el <a href="https://github.com/rojasbadillamoi/DPI#instalación">README</a> para las dependencias y requisitos del proyecto.</p></div></details>
+      </div>
+    </section>
+
+    <section class="citation-section" id="citar" aria-labelledby="citar-titulo">
+      <div class="container citation-layout">
+        <div><p class="eyebrow">SOFTWARE PARA LA CIENCIA</p><h2 id="citar-titulo">Si DPI es parte de tu trabajo,<br> <em>cítalo.</em></h2><p>La referencia permite reconocer el desarrollo del programa y encontrar la versión utilizada.</p><a class="doi-link" href="https://doi.org/10.5281/zenodo.22780901">DOI <span>10.5281/zenodo.22780901</span> <span aria-hidden="true">↗</span></a></div>
+        <div class="citation-card"><p class="citation-label">REFERENCIA · VERSIÓN 2.3.0</p><p id="citation-text">Rojas-Badilla, M. E. (2026). DPI — Dendro Pixel Interface (versión 2.3.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.22780901</p><div class="citation-actions"><button class="button button-secondary" type="button" data-copy="citation-text" hidden>Copiar referencia</button><a class="text-link" href="assets/dpi.bib" download>Descargar BibTeX <span aria-hidden="true">↓</span></a></div><p class="citation-note">Esta referencia corresponde a 2.3.0. Para citar otra versión, consulta su registro en Zenodo.</p></div>
+      </div>
+    </section>
+<aside class="container related-program"><img src="assets/dendrolen-logo.webp" width="64" height="64" alt=""><div><h3>¿Mides con carro y codificador?</h3><p>DendroLen registra las mediciones por USB-serial y las lleva al formato Tucson.</p></div><a data-site="DendroLen" class="text-link" href="https://rojasbadillamoi.github.io/DendroLen/">Conocer DendroLen ↗</a></aside>
+    
+  <section id="contacto" class="contact-band" aria-labelledby="contacto-titulo"><div class="container">
+      <div class="contact-intro"><div><p class="eyebrow">CONTACTO · CONVERSEMOS</p><h2 id="contacto-titulo">Tu experiencia también<br> forma parte del proyecto.</h2></div><p>¿Usas los programas, tienes una idea o quieres compartir tu experiencia? Escríbeme con tus <strong>comentarios, sugerencias y preguntas</strong>. También puedes avisarme si algo no funciona como esperabas.</p></div>
+      <div class="contact-cards">
+        <a class="contact-card" href="mailto:moisese.rojasbadilla@gmail.com"><span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span><span class="contact-card-body"><span class="contact-label">CORREO ELECTRÓNICO</span><strong class="contact-address">moisese.rojasbadilla@gmail.com</strong><span class="contact-action">Enviar un correo <span aria-hidden="true">↗</span></span></span></a>
+        <a class="contact-card" href="https://www.instagram.com/a.traves.de.los.arboles/"><span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/></svg></span><span class="contact-card-body"><span class="contact-label">INSTAGRAM · A TRAVÉS DE LOS ÁRBOLES</span><strong class="contact-address">@a.traves.de.los.arboles</strong><span class="contact-action">Visitar Instagram <span aria-hidden="true">↗</span></span></span></a>
+      </div>
+      <div class="contact-bottom"><div><h3>Moisés E. Rojas Badilla</h3><p>Dendrocronología e hidroclima. Desarrollo software científico de forma independiente. Chile.</p><p class="contact-independence">Desarrollo personal, sin financiamiento externo.</p></div><div class="contact-extra"><a href="https://github.com/rojasbadillamoi/DPI/issues">Comentarios, sugerencias y problemas en GitHub ↗</a></div></div>
+    </div></section></main><footer class="site-footer"><div class="container footer-inner"><p>Moisés E. Rojas Badilla · Chile · Desarrollo independiente.</p><nav aria-label="Páginas de la colección"><a data-site="MoiCedrus" class="" href="https://rojasbadillamoi.github.io/">Catálogo</a><a data-site="DPI" class="" href="https://rojasbadillamoi.github.io/DPI/">DPI</a><a data-site="DendroLen" class="" href="https://rojasbadillamoi.github.io/DendroLen/">DendroLen</a><a href="https://github.com/rojasbadillamoi/DPI">GitHub ↗</a><a href="https://doi.org/10.5281/zenodo.22780901">Zenodo ↗</a></nav><a href="#inicio">Volver arriba ↑</a></div></footer><dialog id="image-dialog" class="image-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><p id="dialog-title">Captura de pantalla</p><button id="close-image" type="button">Cerrar ×</button></div><img id="dialog-image" alt=""><p id="dialog-caption" class="dialog-caption"></p></dialog><p id="copy-status" class="toast" role="status"></p></body></html>
