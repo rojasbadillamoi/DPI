@@ -312,11 +312,16 @@ Tabla detallada:
 ### Clonar e instalar
 
 ```bash
-git clone https://github.com/tu_usuario/dpi-dendro.git
-cd dpi-dendro
+git clone https://github.com/rojasbadillamoi/DPI.git
+cd DPI
 pip install -r requirements.txt
-python main_anillos.py
+python3 run_dpi.py
 ```
+
+En Debian y Ubuntu no hace falta nada de lo anterior: descarga el `.deb` de la
+última versión desde [Releases](https://github.com/rojasbadillamoi/DPI/releases)
+e instálalo con `sudo apt install ./dendro-pixel-interface-dpi_*.deb`, que
+resuelve las dependencias solo.
 
 ---
 
