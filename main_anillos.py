@@ -23,7 +23,7 @@ from PyQt6.QtGui import QIcon
 
 from constantes import (
     APP_NOMBRE, APP_SIGLA, VERSION, icono_app, ruta_icono)
-from estilos import ESTILO_OSCURO, ESTILO_CLARO
+from estilos import aplicar_tema, tema_del_sistema
 from modulo_medicion import PestanaImagen, ExportadorDendro
 from modulo_codatacion import (
     PanelCodatacion, VentanaCronologia, VentanaSkeletonPlot)
@@ -48,11 +48,8 @@ class VentanaAnillos(QMainWindow):
         _cfg = QSettings("MoiCedrus", "DendroAnillos")
         _saved = _cfg.value("tema_oscuro", None)
         if _saved is None:
-            # Detectar tema del sistema operativo
-            from PyQt6.QtGui import QPalette
-            _pal = QApplication.instance().palette()
-            _bg = _pal.color(_pal.ColorRole.Window).lightness()
-            self._modo_oscuro = _bg < 128  # fondo oscuro = tema oscuro
+            # Primera ejecución: arrancar con el tema del escritorio.
+            self._modo_oscuro = tema_del_sistema(QApplication.instance())
         else:
             self._modo_oscuro = _saved == "true" or _saved is True
         self.exportador = ExportadorDendro(self)
@@ -345,10 +342,10 @@ class VentanaAnillos(QMainWindow):
         #    Acá usamos PNGs base64 embebidos (10x7 px, triángulos) que
         #    Qt sí renderiza siempre correctamente.
         #
-        # 2) QCheckBox con `color:palette(buttonText)` se ve en negro en
-        #    Linux: el palette del sistema NO se actualiza cuando aplicamos
-        #    nuestro stylesheet, así que devuelve buttonText=black del tema
-        #    nativo. Forzar color blanco en modo oscuro, negro en claro.
+        # 2) QCheckBox con `color:palette(buttonText)` se veía negro sobre
+        #    fondo oscuro. La causa de fondo ya la arregla `aplicar_tema`,
+        #    que ahora sí actualiza la paleta junto con la hoja de estilos;
+        #    estas reglas quedan como refuerzo explícito.
         color_texto = "white" if self._modo_oscuro else "black"
         bg_btn = "#5a5a5a" if self._modo_oscuro else "#d0d0d0"
         bg_btn_hover = "#FF8C00"
@@ -400,8 +397,7 @@ class VentanaAnillos(QMainWindow):
         QCheckBox {{ color: {color_texto}; }}
         QLabel {{ color: {color_texto}; }}
         """
-        base = ESTILO_OSCURO if self._modo_oscuro else ESTILO_CLARO
-        QApplication.instance().setStyleSheet(base + estilo_extra)
+        aplicar_tema(QApplication.instance(), self._modo_oscuro, estilo_extra)
 
     # ── Imágenes ──────────────────────────────────────────────────────────
 

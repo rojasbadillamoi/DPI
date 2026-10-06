@@ -8,6 +8,9 @@ scipy>=1.10
 openpyxl>=3.1
 opencv-python-headless>=4.7
 Pillow
+# Solo para DESCARGAR gráficos (cronologías y series). Se importa recién al
+# exportar, así que si falta, el resto del programa funciona igual.
+matplotlib>=3.7
 
 # Dependencias de construcción (solo para empaquetar)
 # pip install pyinstaller

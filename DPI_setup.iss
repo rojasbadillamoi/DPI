@@ -20,8 +20,8 @@
 ; -----------------------------------------------------------------------------
 [Setup]
 AppName=Dendro Pixel Interface
-AppVersion=2.3.0
-AppVerName=Dendro Pixel Interface 2.3.0
+AppVersion=2.4.0
+AppVerName=Dendro Pixel Interface 2.4.0
 AppPublisher=Moisés E. Rojas Badilla
 AppPublisherURL=https://github.com/MoiCedrus
 AppSupportURL=https://github.com/MoiCedrus/DPI/issues
@@ -41,7 +41,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 
 ; Carpeta de salida del instalador .exe
 OutputDir=installer_output
-OutputBaseFilename=DPI_Setup_v2.3.0
+OutputBaseFilename=DPI_Setup_v2.4.0
 
 ; Compresión LZMA2 (mejor ratio, más lento)
 Compression=lzma2

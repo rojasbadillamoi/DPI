@@ -28,6 +28,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPen, QColor, QBrush
 
+from estilos import SECUNDARIO_QSS
+import estilos_graficos as _gr
+
 import pyqtgraph as pg
 
 logger = logging.getLogger(__name__)
@@ -268,7 +271,7 @@ class DialogoEstimacionPith(QDialog):
             fr.addRow("Serie de referencia:", QLabel("— (no cargada)"))
 
         lbl_rango = QLabel(f"{n_min:.0f} – {n_max:.0f}  anillos")
-        lbl_rango.setStyleSheet("color: #aaaaaa;")
+        lbl_rango.setStyleSheet(f"color: {SECUNDARIO_QSS};")
         lbl_rango.setToolTip("Rango basado en los percentiles 25–75 de los anchos internos")
         fr.addRow("Rango de incertidumbre:", lbl_rango)
 
@@ -313,6 +316,7 @@ class DialogoEstimacionPith(QDialog):
 
         # ── Gráfico de los anchos internos + tendencia ────────────────────
         self._grafico = pg.PlotWidget(title="Anchos de los N anillos internos")
+        _gr.aplicar_a_pyqtgraph(self._grafico)
         self._grafico.showGrid(x=True, y=True, alpha=0.3)
         self._grafico.setLabel("bottom", "Posición (0=más externo)")
         self._grafico.setLabel("left", "Ancho (mm)")
@@ -487,11 +491,14 @@ class DialogoMetodoPith(QDialog):
         # cambia el tamaño de la ventana.
         self.desc_metodo = QLabel()
         self.desc_metodo.setWordWrap(True)
+        # El fondo es un velo casi transparente (alfa 8/255), así que el color
+        # que se ve detrás es el del tema. La letra tiene que seguirlo o queda
+        # ilegible en modo claro.
         self.desc_metodo.setStyleSheet(
             "QLabel { background-color: rgba(255,255,255,8); "
             "border: 1px solid rgba(255,255,255,30); "
             "border-radius: 4px; padding: 8px; "
-            "font-size: 11px; color: #cccccc; }"
+            f"font-size: 11px; color: {SECUNDARIO_QSS}; }}"
         )
         # MinimumExpanding en horizontal: ocupa todo el ancho disponible.
         # Preferred en vertical: la altura se ajusta al contenido cuando el

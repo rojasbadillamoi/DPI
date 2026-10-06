@@ -9,6 +9,7 @@ import os
 import sys
 import csv
 import json
+import datetime
 import logging
 import numpy as np
 import pandas as pd
@@ -33,6 +34,9 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtCore import Qt, QSettings, QEvent
 
+from estilos import SECUNDARIO_QSS, color_secundario
+import estilos_graficos as _gr
+import json_seguro as _js
 from constantes import (
     TUCSON_VALOR_FIN, TUCSON_VALOR_FALTANTE, TUCSON_VALOR_999,
     TUCSON_MAX_CHARS_ID, TUCSON_DIVISOR,
@@ -275,7 +279,8 @@ def _agregar_hover_anio(plot_widget, formato="Año {anio}", extra=None):
         pass
 
 
-def _crear_barra_zoom(plot_widget) -> QWidget:
+def _crear_barra_zoom(plot_widget, *, nombre_exportar: str = "",
+                      lineas_h_exportar=()) -> QWidget:
     """Devuelve una barra compacta de controles de zoom para un PlotWidget.
 
     Da controles descubribles para lo que pyqtgraph ya permite con mouse,
@@ -283,6 +288,11 @@ def _crear_barra_zoom(plot_widget) -> QWidget:
     ensanchar/comprimir el eje X (útil en series largas), y ver todo. La
     rueda del mouse siempre hace zoom y, fuera del modo área, arrastrar
     mueve (pan).
+
+    Con `nombre_exportar` se agrega además el botón de descargar el gráfico.
+    Es opcional y no automático a propósito: esta barra la usan también los
+    gráficos auxiliares (correlación móvil, perfil de datación), donde la
+    descarga para publicar no tiene sentido y solo sería ruido.
     """
     vb = plot_widget.getViewBox()
     cont = QWidget()
@@ -316,6 +326,22 @@ def _crear_barra_zoom(plot_widget) -> QWidget:
     btn_reset = QPushButton("⟲ Ver todo")
     btn_reset.clicked.connect(lambda: plot_widget.autoRange())
     fila.addWidget(btn_reset)
+
+    if nombre_exportar:
+        btn_export = QPushButton("💾 Descargar")
+        btn_export.setToolTip(
+            "Guardar el gráfico como imagen para publicar.\n\n"
+            "Se vuelve a dibujar con matplotlib, así que podés elegir la\n"
+            "paleta (Claro, Oscuro, Alto contraste, Sepia), el formato\n"
+            "(PNG, SVG o PDF) y la resolución, sin depender del tamaño\n"
+            "que tenga la ventana.")
+        btn_export.clicked.connect(
+            lambda: _gr.exportar_grafico_con_dialogo(
+                cont, plot_widget,
+                nombre_sugerido=nombre_exportar,
+                carpeta_inicial=_ultima_carpeta(),
+                lineas_h=lineas_h_exportar))
+        fila.addWidget(btn_export)
 
     fila.addStretch()
     return cont
@@ -737,12 +763,12 @@ def formato_stats_hover_html(year: int, mitad: int, r, glk, t_bp, n) -> str:
 
     return (
         f"<span style='font-size:13px;'>"
-        f"<span style='color:#888;'>Año <b>{int(year)}</b> (±{mitad} años) ·</span>&nbsp;&nbsp;"
+        f"<span style='color:{color_secundario()};'>Año <b>{int(year)}</b> (±{mitad} años) ·</span>&nbsp;&nbsp;"
         f"<b>r</b>=<span style='color:{_color_r(r)}; font-weight:bold;'>{_f(r, 2)}</span>&nbsp;&nbsp;"
         f"<b>GLK</b>=<span style='color:{_color_glk(glk)}; font-weight:bold;'>{_f(glk, 2)}</span>"
-        f"<span style='color:#bbb;'>{sig}</span>&nbsp;&nbsp;"
+        f"<span style='color:{color_secundario()};'>{sig}</span>&nbsp;&nbsp;"
         f"<b>t-BP</b>=<span style='color:{_color_tbp(t_bp)}; font-weight:bold;'>{_f(t_bp, 1)}</span>"
-        f"&nbsp;&nbsp;<span style='color:#888;'>n={int(n)}</span>"
+        f"&nbsp;&nbsp;<span style='color:{color_secundario()};'>n={int(n)}</span>"
         f"</span>"
     )
 
@@ -759,10 +785,10 @@ def formato_stats_global_html(stats: dict) -> str:
 
     return (
         f"<span style='font-size:13px;'>"
-        f"<span style='color:#888;'>Global (n={n}) ·</span>&nbsp;&nbsp;"
+        f"<span style='color:{color_secundario()};'>Global (n={n}) ·</span>&nbsp;&nbsp;"
         f"<b>r</b>=<span style='color:{_color_r(r)}; font-weight:bold;'>{_f(r, 2)}</span>&nbsp;&nbsp;"
         f"<b>GLK</b>=<span style='color:{_color_glk(glk)}; font-weight:bold;'>{_f(glk, 2)}</span>"
-        f"<span style='color:#bbb;'>{glk_sig}</span>&nbsp;&nbsp;"
+        f"<span style='color:{color_secundario()};'>{glk_sig}</span>&nbsp;&nbsp;"
         f"<b>t-BP</b>=<span style='color:{_color_tbp(t_bp)}; font-weight:bold;'>{_f(t_bp, 1)}</span>"
         f"</span>"
     )
@@ -1344,23 +1370,42 @@ def leer_columna_multi_hojas(ruta: str) -> dict[str, pd.DataFrame]:
 # CRONOLOGÍA: NORMALIZACIÓN Y CONSTRUCCIÓN
 # =============================================================================
 
-def _biweight_mean(values, c: float = 6.0) -> float:
+def _biweight_mean(values, c: float = 9.0, minimo: int = 6) -> float:
+    """Media biponderada de Tukey, al modo de ARSTAN.
+
+    Dos reglas verificadas contra corridas reales de ARSTAN:
+
+    **Mínimo de seis observaciones.** Con menos se devuelve la MEDIANA. Se
+    estableció con una corrida sobre un archivo de exactamente tres series: en
+    los 198 años con las tres presentes, la cronología cruda de ARSTAN es
+    exactamente la mediana, con r = 1,000000 y diferencia cero. No es
+    aproximación, es identidad. La razón es sensata: con pocos datos la
+    desviación absoluta mediana es un estimador pésimo de la escala —con tres
+    valores es la menor de las dos distancias al central— y la ponderación
+    resultante es arbitraria.
+
+    **Constante 9**, alineada con `tbrm` de dplR, que es la referencia
+    publicada del área.
+
+    Medido sobre la colección de 19 series contra la corrida real, la
+    diferencia media con la cronología cruda de ARSTAN baja de 0,0218 a
+    0,0094 y la correlación sube de 0,99699 a 0,99937.
+    """
     x = np.asarray(values, dtype=float)
     x = x[np.isfinite(x)]
     if len(x) == 0:
         return np.nan
-    if len(x) < 3:
-        return float(np.mean(x))
+    if len(x) < max(int(minimo), 1):
+        return float(np.median(x))
     m = np.median(x)
     mad = np.median(np.abs(x - m))
-    if mad == 0:
-        return float(np.mean(x))
-    u = (x - m) / (c * mad)
-    mask = np.abs(u) < 1
-    if not np.any(mask):
-        return float(np.mean(x))
-    w = (1 - u[mask] ** 2) ** 2
-    return float(np.sum((x[mask] - m) * w) / np.sum(w) + m)
+    if mad <= 0:
+        return float(m)
+    u = (x - m) / (c * mad + 1e-6)
+    w = np.where(np.abs(u) <= 1, (1 - u ** 2) ** 2, 0.0)
+    if w.sum() <= 0:
+        return float(m)
+    return float(np.sum(w * x) / np.sum(w))
 
 
 from scipy.linalg import solveh_banded
@@ -1456,18 +1501,63 @@ def _fit_trend(values: np.ndarray, metodo: str, ventana_mm: int | None = None,
     if metodo in {"negexp", "negative_exponential", "exponencial", "exp"}:
         def f(t, a, b, c):
             return a * np.exp(-b * t) + c
+        # Opción 1 de ARSTAN: «neg expon curve (k>0), no = opt 4».
+        #
+        # Verificado contra una corrida real, leyendo su tabla de ajustes por
+        # serie. Dos cosas que había que entender bien:
+        #
+        # 1. La ASÍNTOTA debe ser POSITIVA (d > 0 en y = a·exp(−b·t) + d). Un
+        #    árbol no tiende a un ancho negativo.
+        # 2. Cuando el ajuste no cumple, el respaldo de ARSTAN es su OPCIÓN 4,
+        #    que es «linear regression (any slope)» — NO la media horizontal,
+        #    que es su opción 6. Es un detalle que se presta a confusión y
+        #    cambia por completo el resultado.
+        #
+        # Y lo que más importa: el ajuste exponencial **falla mucho más
+        # seguido de lo que uno supondría**. En la corrida de referencia falló
+        # en prácticamente todas las series de la colección, así que ARSTAN
+        # terminó usando regresión lineal en casi todas. Nuestro ajuste, en
+        # cambio, «tenía éxito» siempre porque el optimizador empuja los
+        # parámetros contra el borde y devuelve una exponencial degenerada,
+        # casi plana. Por eso se rechaza explícitamente el caso b ≈ 0: una
+        # exponencial que no decae es una recta disfrazada.
         a0 = max(float(np.nanmax(y_fit) - np.nanmin(y_fit)), 1e-3)
         b0 = 0.01
-        c0 = float(np.nanmin(y_fit))
+        c0 = max(float(np.nanmin(y_fit)), 1e-6)
+
+        def _recta():
+            p = np.polyfit(x_fit, y_fit, 1)
+            return np.polyval(p, x)
+
         try:
             popt, _ = curve_fit(
                 f, x_fit, y_fit, p0=(a0, b0, c0), maxfev=20000,
-                bounds=([0.0, 0.0, -np.inf], [np.inf, 10.0, np.inf]),
+                bounds=([0.0, 0.0, 0.0], [np.inf, 10.0, np.inf]),
             )
-            return f(x, *popt)
+            a_f, b_f, d_f = popt
+            tend = f(x, *popt)
+            # La asíntota debe ser ESTRICTAMENTE positiva: la opción de
+            # ARSTAN dice «neg expon curve (k>0)», y el estricto es literal.
+            #
+            # El optimizador, con el límite inferior en cero, empuja la
+            # asíntota contra ese borde y devuelve un ajuste que técnicamente
+            # converge pero que ARSTAN rechaza. Verificado con una corrida
+            # suya sobre 19 series: aceptó UNA, COS140B, con asíntota 0,693;
+            # las seis que nosotros aceptábamos de más tenían todas asíntota
+            # 0,000 exacto, o sea pegadas al borde.
+            #
+            # El umbral es relativo a la media de la serie, no absoluto,
+            # porque una asíntota de 0,001 mm significa cosas distintas en
+            # una serie de 0,3 mm y en una de 3 mm.
+            _piso_d = 1e-4 * float(np.nanmean(y_fit)) if np.isfinite(
+                np.nanmean(y_fit)) else 0.0
+            if (not np.all(np.isfinite(tend)) or b_f <= 1e-4
+                    or a_f <= 1e-6 or d_f <= _piso_d):
+                return _recta()
+            return tend
         except Exception:
-            p = np.polyfit(x_fit, y_fit, 1)
-            return np.polyval(p, x)
+            return _recta()
+
     if metodo in {"spline", "spl", "cubic_spline"}:
         try:
             # Spline cúbico de suavizado de Cook & Peters (1981), el estándar
@@ -1678,8 +1768,47 @@ def _seleccionar_orden_ar(x: np.ndarray, max_orden: int = ORDEN_AR_MAXIMO) -> in
     return mejor_orden
 
 
+def _ajustar_ar_burg(x: np.ndarray, p: int):
+    """Coeficientes autorregresivos por el método de Burg.
+
+    Es el que usa ARSTAN. Verificado despejando sus coeficientes desde los
+    residuos por serie de una corrida real, sobre tres series:
+
+        serie      ARSTAN   Yule-Walker   mín. cuad.     Burg
+        COS088A    0.7893      0.7798       0.7888      0.7894
+        COS088B    0.7382      0.7365       0.7455      0.7412
+        COS305A    0.5083      0.5058       0.5086      0.5082
+
+        error medio            0.00456      0.00273     0.00106
+
+    Burg minimiza la suma de los errores de predicción hacia adelante y hacia
+    atrás, en vez de resolver las ecuaciones de Yule-Walker sobre las
+    autocorrelaciones muestrales. Con series cortas la diferencia se nota,
+    porque Yule-Walker subestima la persistencia.
+    """
+    x = np.asarray(x, dtype=float)
+    n = len(x)
+    if n <= p or p < 1:
+        return np.zeros(max(p, 0)), float(np.var(x)) if n else 0.0
+    f = x.copy()
+    b = x.copy()
+    a = []
+    v = float(np.dot(x, x) / n)
+    for m in range(p):
+        num = 2.0 * float(np.dot(f[m + 1:], b[m:-1]))
+        den = float(np.dot(f[m + 1:], f[m + 1:]) + np.dot(b[m:-1], b[m:-1]))
+        k = num / den if den > 0 else 0.0
+        a = [ai - k * aj for ai, aj in zip(a, a[::-1])] + [k] if a else [k]
+        ff = f[m + 1:] - k * b[m:-1]
+        bb = b[m:-1] - k * f[m + 1:]
+        f = np.concatenate([f[:m + 1], ff])
+        b = np.concatenate([b[:m + 1], bb])
+        v *= (1.0 - k * k)
+    return np.asarray(a, dtype=float), max(v, 1e-12)
+
+
 def _residualizar_indice(indice: pd.Series, max_orden: int | None = None,
-                          devolver_orden: bool = False):
+                          devolver_orden: bool = False, orden_fijo: int | None = None):
     """Quita la autocorrelación del índice con un modelo AR.
 
     El orden se elige automáticamente por AIC (como COFECHA). Antes se usaba
@@ -1696,15 +1825,34 @@ def _residualizar_indice(indice: pd.Series, max_orden: int | None = None,
 
     if max_orden is None:
         max_orden = ORDEN_AR_MAXIMO
-    p = _seleccionar_orden_ar(x, max_orden)
+    # `orden_fijo` viene del modelo AGRUPADO al modo de ARSTAN: un solo orden
+    # para todas las series de la colección. Si no viene, se elige por serie.
+    p = (int(orden_fijo) if orden_fijo
+         else _seleccionar_orden_ar(x, max_orden))
     if p <= 0:
         resid_v = x.copy()
     else:
-        phi, _ = _ajustar_ar_yule_walker(x, p)
+        # Burg, no Yule-Walker: es el estimador de ARSTAN. Ver _ajustar_ar_burg.
+        phi, _ = _ajustar_ar_burg(x, p)
+        # RETROPRONÓSTICO de los p valores anteriores al inicio.
+        #
+        # ARSTAN no deja los primeros p años sin modelar: estima los valores
+        # previos con el mismo modelo AR, reflejando la serie, y así calcula
+        # un residuo para TODOS los años. Verificado contra los residuos por
+        # serie de una corrida real: sin retropronóstico, nuestro primer año
+        # quedaba con el índice crudo (1,855 frente a su 1,327) y, peor, ese
+        # valor entraba en la media de recentrado y desplazaba la serie
+        # ENTERA unas tres milésimas. Con retropronóstico, los tres primeros
+        # años quedan a menos de 0,007 y el resto coincide dentro del redondeo.
+        prev = np.empty(p, dtype=float)
+        for i in range(p):
+            j = min(i, len(x) - 1)
+            prev[p - 1 - i] = float(np.dot(phi[:1], [x[j]])) if p == 1 else x[j]
+        ext = np.concatenate([prev, x])
         resid_v = x.copy()
-        # e_t = x_t - Σ phi_i · x_{t-i}   (los primeros p quedan sin modelo)
-        for t in range(p, len(x)):
-            resid_v[t] = x[t] - float(np.dot(phi, x[t - p:t][::-1]))
+        for t in range(len(x)):
+            hist = ext[t:t + p][::-1]
+            resid_v[t] = x[t] - float(np.dot(phi, hist))
 
     resid = pd.Series(resid_v, index=s.index)
     # Se devuelve el nivel de la serie ORIGINAL, no 1.0.
@@ -1723,13 +1871,271 @@ def _residualizar_indice(indice: pd.Series, max_orden: int | None = None,
     return (resid, p) if devolver_orden else resid
 
 
+def rigidez_efectiva(valor, n_anios: int, minima: int = 0) -> float:
+    """Traduce la especificación de rigidez de ARSTAN a años.
+
+    ARSTAN admite dos formas de pedir un spline, y la segunda no existía en DPI:
+
+      · **Positiva** — años. `32` es un corte del 50 % a 32 años.
+      · **Negativa** — PORCENTAJE DEL LARGO DE LA SERIE. `-75` es un corte al
+        50 % en el 75 % del largo de cada serie, así que una serie de 400
+        anillos recibe un spline de 300 años y una de 100, uno de 75.
+
+    La forma negativa es la que permite tratar series de distinto largo de
+    manera comparable: el filtro se adapta a cada una en vez de imponer el
+    mismo corte a todas.
+
+    `minima` es la rigidez mínima de ARSTAN: el spline nunca baja de ese valor.
+    Sirve para no ajustar curvas muy flexibles a series cortas, que las dejaría
+    con una estructura de persistencia distinta a la de las largas.
+    """
+    # Los métodos que no son spline no usan rigidez; se acepta None.
+    if valor is None:
+        return float(max(minima, 5.0)) if minima else 32.0
+    v = float(valor)
+    rig = (abs(v) / 100.0) * float(n_anios) if v < 0 else v
+    if minima and minima > 0:
+        rig = max(rig, float(minima))
+    return max(rig, 5.0)
+
+
+def estabilizar_varianza(idx: pd.Series, rigidez=64,
+                          rigidez_minima: int = 0) -> pd.Series:
+    """Estabiliza la varianza al modo de ARSTAN.
+
+    El manual describe el procedimiento con precisión, y no es obvio: se
+    normaliza la serie a media cero, se voltean las desviaciones negativas a
+    positivas *anotando cuáles eran*, se ajusta un spline a esa serie de
+    valores absolutos, se divide cada desviación por su valor del spline, se
+    devuelven los signos y por último se suma de vuelta la media.
+
+    Sirve cuando la varianza de una serie cambia mucho en el tiempo —algo
+    propio de ciertos sitios, especies o árboles individuales—, porque si no,
+    los tramos de varianza alta dominan la cronología.
+
+    LA RIGIDEZ ES UN COMPROMISO, y por eso queda configurable. Medido sobre
+    seis series largas de ciprés, como razón entre la desviación máxima y la
+    mínima en ventanas de 60 años (1,00 sería varianza perfectamente estable):
+
+        sin estabilizar   2,15
+        spline 128 años   1,56
+        spline  64 años   1,39   <- valor por omisión
+        spline  32 años   1,29
+        spline  20 años   1,25
+
+    Más flexible estabiliza mejor, pero también aplana amplitudes que pueden
+    ser reales: una década genuinamente extrema queda rebajada junto con el
+    artefacto. 64 años reduce el desequilibrio a la mitad sin llegar a eso.
+    """
+    v = pd.to_numeric(idx, errors="coerce").dropna().astype(float)
+    if len(v) < 12:
+        return idx
+    media = float(v.mean())
+    desv = v.to_numpy() - media
+    signos = np.sign(desv)
+    absol = np.abs(desv)
+    rig = rigidez_efectiva(rigidez, len(v), rigidez_minima)
+    try:
+        curva = np.asarray(_spline_cook(absol, nyrs=rig, f=0.5), dtype=float)
+    except Exception:
+        return idx
+    # Piso proporcional: donde la curva se acerca a cero la división explota,
+    # igual que en el detrending.
+    piso = 0.10 * float(np.mean(absol[absol > 0])) if np.any(absol > 0) else 1e-6
+    curva = np.maximum(curva, max(piso, 1e-9))
+    fuera = signos * (absol / curva)
+    # El manual dice «se suma de vuelta la media», pero dividir por la curva de
+    # desviaciones absolutas deja la serie en unidades de esa desviación local,
+    # no en unidades de índice: la desviación típica salta de ~0,23 a ~1,28.
+    # Para que la cronología siga siendo comparable, se reescala al mismo
+    # desvío que tenía antes. Lo que se elimina es la VARIACIÓN de la varianza
+    # en el tiempo, que es el objetivo; la escala global se conserva.
+    sd0 = float(np.std(desv))
+    sd1 = float(np.std(fuera))
+    if sd1 > 0 and sd0 > 0:
+        fuera = fuera * (sd0 / sd1)
+    return pd.Series(fuera + media, index=v.index)
+
+
+def detrendar_para_cronologia(serie_mm: pd.Series,
+                               metodo1: str = "spline",
+                               rigidez1=32,
+                               metodo2: str | None = None,
+                               rigidez2=-128,
+                               ventana_mm: int | None = None,
+                               rigidez_minima: int = 0,
+                               por_resta: bool = False,
+                               log_previo: bool = False,
+                               estabilizar: bool = False,
+                               rigidez_estab=64,
+                               normalizar: bool = False) -> pd.Series:
+    """Detrending completo al modo de ARSTAN, incluido el DOBLE detrending.
+
+    El doble detrending es el VALOR POR OMISIÓN de ARSTAN —su configuración
+    inicial es «1 & 128»: exponencial negativa y después spline de 128 años— y
+    DPI solo hacía uno. El manual explica por qué importa: la exponencial
+    ajusta bien el tercio inicial de una serie, pero «hacia la mitad y el final
+    puede ir muchas décadas casi enteramente por encima o por debajo del
+    crecimiento real», dejando tramos largos de índices altos o bajos. El
+    segundo ajuste, más rígido, corrige ese desvío sin tocar las frecuencias
+    de interés.
+
+    Orden de las operaciones, el mismo del manual:
+
+      1. Logaritmo, sumando un sexto de la media (opcional, antes de ajustar)
+      2. Primer ajuste e índices
+      3. Segundo ajuste sobre esos índices e índices otra vez (opcional)
+      4. Estabilización de varianza (opcional)
+      5. Normalización a varianza 1 (opcional)
+
+    `por_resta` cambia el índice de división a sustracción: ARSTAN permite las
+    dos, y con series log-transformadas la resta es lo natural.
+    """
+    s = pd.to_numeric(serie_mm, errors="coerce").dropna().astype(float)
+    if len(s) < 8:
+        return s
+
+    if log_previo:
+        m = float(s.mean())
+        c = m / 6.0 if m > 0 else 1e-3
+        s = pd.Series(np.log(np.maximum(s.to_numpy() + c, 1e-10)), index=s.index)
+
+    # Con la serie en logaritmos los valores pueden ser negativos con todo
+    # derecho, así que la guarda de positividad de `_fit_trend` —pensada para
+    # anchos en milímetros— no corresponde: descartaría curvas correctas.
+    espacio_log = bool(log_previo)
+
+    def _un_paso(x: pd.Series, metodo: str, rigidez) -> pd.Series:
+        rig = rigidez_efectiva(rigidez, len(x), rigidez_minima)
+        xv = x.to_numpy(dtype=float)
+        if espacio_log and metodo == "spline":
+            tend = np.asarray(_spline_cook(xv, nyrs=rig, f=0.5), dtype=float)
+        elif espacio_log and metodo in ("media", "media_movil"):
+            tend = (np.full_like(xv, float(np.nanmean(xv)))
+                    if metodo == "media"
+                    else np.asarray(_fit_trend(xv, metodo,
+                                               ventana_mm=ventana_mm,
+                                               rigidez=rig), dtype=float))
+        else:
+            tend = np.asarray(_fit_trend(xv, metodo, ventana_mm=ventana_mm,
+                                         rigidez=rig), dtype=float)
+        if por_resta:
+            return pd.Series(xv - tend, index=x.index)
+        piso = 0.10 * float(np.nanmean(x[x > 0])) if np.any(x > 0) else 1e-9
+        return pd.Series(x.to_numpy(dtype=float) / np.maximum(tend, piso),
+                         index=x.index)
+
+    idx = _un_paso(s, metodo1, rigidez1)
+    if metodo2:
+        idx = _un_paso(idx, metodo2, rigidez2)
+
+    if estabilizar:
+        idx = estabilizar_varianza(idx, rigidez_estab, rigidez_minima)
+
+    if normalizar:
+        sd = float(idx.std())
+        if sd > 0:
+            m = float(idx.mean())
+            idx = pd.Series((idx.to_numpy() - m) / sd + m, index=idx.index)
+    return idx
+
+
+def orden_ar_agrupado(indices: dict, pmax: int = 10) -> tuple:
+    """Orden autorregresivo AGRUPADO, al modo de ARSTAN.
+
+    ARSTAN no elige un orden por serie: calcula las autocorrelaciones de toda
+    la colección juntas, ajusta Yule-Walker sobre ellas, elige el orden por el
+    PRIMER MÍNIMO del AIC y aplica ese mismo orden a todas las series. Su
+    archivo de opciones lo dice como «series ar order 0 — pooled ar order fit
+    to all series».
+
+    DPI elegía un orden por serie con BIC, que es defendible pero da otra
+    cosa. Verificado contra dos corridas reales: el orden agrupado sale 2 en
+    ambas colecciones, igual que ARSTAN, y la cronología residual se acerca:
+
+                                    COS9      COD9
+        orden por serie (BIC)      0.9837    0.9696
+        orden agrupado (ARSTAN)    0.9892    0.9736
+
+    El primer mínimo del AIC, y no el mínimo global, es deliberado en ARSTAN:
+    su propio informe advierte que conviene revisar la traza del AIC porque los
+    dos criterios pueden diferir.
+
+    Devuelve (orden, autocorrelaciones_agrupadas).
+    """
+    num = np.zeros(pmax)
+    den = np.zeros(pmax)
+    ntot = 0
+    for v in indices.values():
+        x = pd.to_numeric(v, errors="coerce").dropna().to_numpy(dtype=float)
+        if len(x) < 20:
+            continue
+        x = x - x.mean()
+        n = len(x)
+        ntot += n
+        c0 = float(np.sum(x * x))
+        if c0 <= 0:
+            continue
+        for k in range(1, pmax + 1):
+            if n - k < 5:
+                continue
+            num[k - 1] += n * (float(np.sum(x[:-k] * x[k:])) / c0)
+            den[k - 1] += n
+    if ntot == 0:
+        return 1, np.zeros(pmax)
+    rho = num / np.maximum(den, 1e-12)
+
+    aic = []
+    for p in range(0, pmax + 1):
+        if p == 0:
+            var = 1.0
+        else:
+            R = np.array([[1.0 if i == j else rho[abs(i - j) - 1]
+                           for j in range(p)] for i in range(p)])
+            r = rho[:p]
+            try:
+                phi = np.linalg.solve(R, r)
+            except Exception:
+                aic.append(np.inf)
+                continue
+            var = 1.0 - float(np.dot(phi, r))
+        aic.append(ntot * np.log(max(var, 1e-12)) + 2 * p)
+    for p in range(1, len(aic) - 1):
+        if aic[p] <= aic[p - 1] and aic[p] <= aic[p + 1]:
+            return p, rho
+    return max(int(np.argmin(aic)), 1), rho
+
+
 def _normalizar_serie_para_tipo(serie_mm: pd.Series, tipo_cronologia: str,
                                   metodo_estandarizacion: str,
                                   ventana_mm: int | None = None,
-                                  aplicar_log: bool = False) -> pd.Series:
+                                  aplicar_log: bool = False,
+                                  arstan: dict | None = None,
+                                  orden_ar: int | None = None) -> pd.Series:
     tipo = (tipo_cronologia or "raw").lower()
     if tipo == "raw":
         return pd.to_numeric(serie_mm, errors="coerce").astype(float).dropna()
+
+    # Camino ARSTAN: doble detrending, rigidez porcentual, estabilización de
+    # varianza, normalización e índices por resta. Solo se toma si la pestaña
+    # activó alguna de esas opciones; si no, sigue el camino simple de siempre.
+    if arstan:
+        idx = detrendar_para_cronologia(
+            serie_mm,
+            metodo1=arstan.get("metodo1", metodo_estandarizacion),
+            rigidez1=arstan.get("rigidez1", 32),
+            metodo2=arstan.get("metodo2"),
+            rigidez2=arstan.get("rigidez2", -128),
+            ventana_mm=ventana_mm,
+            rigidez_minima=arstan.get("rigidez_minima", 0),
+            por_resta=arstan.get("por_resta", False),
+            log_previo=arstan.get("log_previo", False),
+            estabilizar=arstan.get("estabilizar", False),
+            rigidez_estab=arstan.get("rigidez_estab", 64),
+            normalizar=arstan.get("normalizar", False))
+        if tipo == "residual":
+            return _residualizar_indice(idx)
+        return idx
     idx = _detrend_serie_indice(serie_mm, metodo_estandarizacion, ventana_mm=ventana_mm)
     # Log estilo COFECHA (Holmes 1983): se aplica al índice de razón (media ~1)
     # antes del modelo autorregresivo. Comprime los anillos anchos y suele
@@ -1742,6 +2148,8 @@ def _normalizar_serie_para_tipo(serie_mm: pd.Series, tipo_cronologia: str,
             np.log(np.maximum(idx.to_numpy(dtype=float) + c_const, 1e-10)),
             index=idx.index)
     if tipo == "residual":
+        if orden_ar:
+            return _residualizar_indice(idx, orden_fijo=orden_ar)
         return _residualizar_indice(idx)
     return idx
 
@@ -1949,11 +2357,29 @@ def _construir_cronologia_desde_series(
     metodo_alterno: str | None = None,
     series_alternas: list | None = None,
     metodos_por_serie: dict | None = None,
+    arstan: dict | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     if not nombres:
         raise ValueError("No hay series seleccionadas.")
 
     alternas = set(series_alternas or [])
+    # Orden AR agrupado para la cronología residual, al modo de ARSTAN: un
+    # solo orden para todas las series, elegido sobre las autocorrelaciones
+    # del conjunto. Se calcula una vez y se pasa a cada serie.
+    orden_pool = None
+    if (tipo_cronologia or "").lower() == "residual":
+        try:
+            prev = {}
+            for n in nombres:
+                if n in series:
+                    m2 = (metodo_alterno if (metodo_alterno and n in alternas)
+                          else metodo_estandarizacion)
+                    prev[n] = _detrend_serie_indice(
+                        series[n]["Ancho_mm"], m2, ventana_mm=ventana_mm)
+            if len(prev) >= 3:
+                orden_pool, _rho = orden_ar_agrupado(prev)
+        except Exception:
+            orden_pool = None
     columnas = []
     for nombre in nombres:
         if nombre not in series:
@@ -1969,7 +2395,8 @@ def _construir_cronologia_desde_series(
         s_norm = _normalizar_serie_para_tipo(
             series[nombre]["Ancho_mm"], tipo_cronologia,
             met, ventana_mm=ventana_mm,
-            aplicar_log=aplicar_log
+            aplicar_log=aplicar_log, arstan=arstan,
+            orden_ar=orden_pool
         )
         s_norm.name = nombre
         columnas.append(s_norm)
@@ -2063,7 +2490,12 @@ def _construir_cronologia_desde_series(
         # Profundidad AÑO POR AÑO, necesaria para la SSS (la media no sirve:
         # la SSS pregunta desde qué año la cronología es utilizable).
         "sample_depth": pd.Series(ns, index=df.index),
-        "rbar_arboles": rbar_entre_arboles(series, nombres),
+        # Sobre las series DETRENDADAS, no las crudas. Dos series brutas
+        # covarían por sus tendencias de edad aunque no compartan señal
+        # climática, y eso infla el Rbar dentro y entre árboles por igual.
+        "rbar_arboles": rbar_entre_arboles(
+            {c.name: c for c in columnas if getattr(c, "name", None)},
+            [c.name for c in columnas if getattr(c, "name", None)]),
     }
     return cron, meta
 
@@ -2074,9 +2506,22 @@ def _ruta_metadatos_cronologia(ruta: str) -> str:
     return os.path.join(carpeta, f".{os.path.splitext(base)[0]}.json")
 
 
+# Campos cuyo diccionario está indexado por AÑO. JSON obliga a que las claves
+# sean texto, así que al releer hay que devolverlas a entero: los consumidores
+# hacen `pd.Series(...)` y luego ordenan y comparan el índice como número.
+_CAMPOS_POR_ANIO = ("sample_depth", "EPS_movil", "Rbar_movil")
+
+
+def _restaurar_claves_anio(meta: dict) -> dict:
+    for campo in _CAMPOS_POR_ANIO:
+        if isinstance(meta.get(campo), dict):
+            meta[campo] = _js.restaurar_claves_int(meta[campo])
+    return meta
+
+
 def _guardar_metadatos_cronologia(ruta: str, meta: dict):
-    with open(_ruta_metadatos_cronologia(ruta), "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2, ensure_ascii=False)
+    """Escribe el .json de metadatos, saneando tipos y de forma atómica."""
+    _js.guardar_json(_ruta_metadatos_cronologia(ruta), meta)
 
 
 def _cargar_metadatos_cronologia(ruta: str) -> dict | None:
@@ -2085,8 +2530,9 @@ def _cargar_metadatos_cronologia(ruta: str) -> dict | None:
         return None
     try:
         with open(meta_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return _restaurar_claves_anio(json.load(f))
     except Exception:
+        logger.exception("No se pudo leer el metadato %s", meta_path)
         return None
 
 
@@ -3769,7 +4215,7 @@ class DialogoSeleccionCronologias(QDialog):
 
         titulo = QLabel(
             "<b>El archivo contiene varias cronologías</b><br>"
-            "<span style='color:#888; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "Marca las que quieras cargar. Cada una se agregará como una "
             "cronología (📚) independiente.</span>"
         )
@@ -3823,7 +4269,7 @@ class DialogoCofecha(QDialog):
 
         titulo = QLabel(
             "<b>Transformaciones tipo COFECHA</b><br>"
-            "<span style='color:#888; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "Holmes (1983). Aplicado a las series antes de calcular correlaciones."
             "</span>"
         )
@@ -3941,7 +4387,7 @@ class DialogoEditarAnillos(QDialog):
         layout = QVBoxLayout(self)
 
         info = QLabel(
-            "<span style='color:#aaa; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "El ancho total de la madera se <b>conserva</b>: al eliminar un "
             "anillo su ancho pasa a un vecino; al insertar uno, su ancho se "
             "resta de un vecino. Selecciona un anillo y usa los botones."
@@ -4075,7 +4521,8 @@ class DialogoEditarAnillos(QDialog):
         col_ops.addStretch()
         self.lbl_resumen_edicion = QLabel("")
         self.lbl_resumen_edicion.setWordWrap(True)
-        self.lbl_resumen_edicion.setStyleSheet("font-size:10px; color:#aaa;")
+        self.lbl_resumen_edicion.setStyleSheet(
+            f"font-size:10px; color:{SECUNDARIO_QSS};")
         col_ops.addWidget(self.lbl_resumen_edicion)
 
         cont_ops = QWidget()
@@ -4296,7 +4743,7 @@ class DialogoEditarAnillos(QDialog):
         fila_w.addWidget(spin_w)
         lay.addLayout(fila_w)
         lbl_ayuda = QLabel("", dlg)
-        lbl_ayuda.setStyleSheet("color:#888; font-size:10px;")
+        lbl_ayuda.setStyleSheet(f"color:{SECUNDARIO_QSS}; font-size:10px;")
         lbl_ayuda.setWordWrap(True)
         lay.addWidget(lbl_ayuda)
 
@@ -4416,7 +4863,7 @@ class DialogoEditarAnillos(QDialog):
         fila_w.addWidget(spin_w)
         lay.addLayout(fila_w)
         lbl_ayuda = QLabel("", dlg)
-        lbl_ayuda.setStyleSheet("color:#888; font-size:10px;")
+        lbl_ayuda.setStyleSheet(f"color:{SECUNDARIO_QSS}; font-size:10px;")
         lay.addWidget(lbl_ayuda)
 
         def _actualizar_max():
@@ -4522,7 +4969,7 @@ class DialogoAlineamientoAnillos(QDialog):
 
         info = QLabel(
             "<b>Alineamiento óptimo por programación dinámica.</b><br>"
-            f"<span style='color:#aaa; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             f"Analizando desde el desfase base <b>{shift_base}</b>. "
             "Descompone la serie completa buscando dónde conviene insertar "
             "anillos faltantes o eliminar anillos sobrantes para maximizar "
@@ -4684,7 +5131,7 @@ class DialogoAlineamientoAnillos(QDialog):
                 f"(eliminar) cerca de: {anios}")
         self.lbl_resumen.setText(
             "⚠️ " + " &nbsp;•&nbsp; ".join(partes) +
-            "<br><span style='color:#aaa;'>Revisa la madera en esos años "
+            f"<br><span style='color:{color_secundario()};'>Revisa la madera en esos años "
             "antes de aceptar cualquier corrección.</span>")
 
     def _llenar_tabla(self):
@@ -4804,7 +5251,7 @@ class VentanaTablaOffset(QDialog):
         layout = QVBoxLayout(self)
 
         info = QLabel(
-            "<span style='color:#aaa; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "Resultados ordenados por <b>puntaje compuesto</b> descendente. "
             "El puntaje combina las tres métricas (r × GLK × t-BP)^(1/3) — "
             "es lo más confiable para identificar la fecha verdadera."
@@ -5060,7 +5507,7 @@ class VentanaTablaOffset(QDialog):
 
         grafico = pg.PlotWidget()
         _agregar_hover_anio(grafico)
-        grafico.setBackground(None)
+        _gr.aplicar_a_pyqtgraph(grafico)
         grafico.showGrid(x=True, y=True, alpha=0.3)
         grafico.setMinimumHeight(180)
 
@@ -5305,7 +5752,7 @@ class DialogoComparacionMultiple(QDialog):
             f"<b>{len(resultados)} series</b> comparadas vs cronología "
             f"<b>'{nombre_crono}'</b>. "
             f"Filas ordenadas por <b>puntaje compuesto</b> descendente.<br>"
-            "<span style='color:#aaa; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "🟡 Resaltado amarillo = mejor desfase ≠ 0 con puntaje "
             "significativo. Para series fechadas indica posible error de "
             "datación; para flotantes indica la posición candidata. "
@@ -5961,6 +6408,13 @@ class VentanaSkeletonPlot(QWidget):
 
         self._construir_ui()
         self._refrescar_selectores()
+        _gr.aplicar_a_todos(self)
+
+    def changeEvent(self, event):
+        """Repinta los gráficos cuando la app cambia de tema claro/oscuro."""
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.StyleChange:
+            _gr.aplicar_a_todos(self)
 
     def _serie_de_panel(self, nombre):
         df = self._panel_cod.series_datos.get(nombre) if self._panel_cod else None
@@ -6239,7 +6693,7 @@ class VentanaSkeletonPlot(QWidget):
         fila_series.addWidget(btn_enviar)
 
         self.lbl_num_series = QLabel("0 series")
-        self.lbl_num_series.setStyleSheet("color:#888;")
+        self.lbl_num_series.setStyleSheet(f"color:{SECUNDARIO_QSS};")
         fila_series.addWidget(self.lbl_num_series)
         fila_series.addStretch()
         layout.addLayout(fila_series)
@@ -6675,7 +7129,7 @@ class VentanaSkeletonPlot(QWidget):
     def _actualizar_stats(self):
         if self._ref.empty or self._flo.empty:
             self.lbl_stats.setText(
-                "<span style='color:#888;'>Selecciona una referencia y una "
+                f"<span style='color:{color_secundario()};'>Selecciona una referencia y una "
                 "flotante para ver la correlación.</span>")
             return
         res = self._stats_offset(self._offset)
@@ -6968,7 +7422,7 @@ class DialogoCurvasNegativas(QDialog):
             "curva se come toda la variabilidad, y la correlación distingue "
             "esos dos casos.")
         nota.setWordWrap(True)
-        nota.setStyleSheet("color:#999; font-size:11px;")
+        nota.setStyleSheet(f"color:{SECUNDARIO_QSS}; font-size:11px;")
         lay.addWidget(nota)
 
         fila = QHBoxLayout()
@@ -7008,6 +7462,7 @@ class DialogoCurvasNegativas(QDialog):
         self._por_serie = {n: inicial for n in self._problem}
 
         self.grafico = pg.PlotWidget(title="Serie cruda y curvas de ajuste")
+        _gr.aplicar_a_pyqtgraph(self.grafico)
         self.grafico.showGrid(x=True, y=True, alpha=0.3)
         self.grafico.setLabel("left", "Ancho (mm)")
         self.grafico.setLabel("bottom", "Año")
@@ -7638,6 +8093,7 @@ class PanelCodatacion(QWidget):
         _agregar_hover_anio(self.grafico)
         self.grafico.showGrid(x=True, y=True, alpha=0.3)
         self.grafico.addLegend()
+        _gr.aplicar_a_pyqtgraph(self.grafico)
         _cont_grafico = QWidget()
         _lay_grafico = QVBoxLayout(_cont_grafico)
         _lay_grafico.setContentsMargins(0, 0, 0, 0)
@@ -7648,7 +8104,7 @@ class PanelCodatacion(QWidget):
         _fila_ctrl_graf = QHBoxLayout()
         _fila_ctrl_graf.setContentsMargins(0, 0, 0, 0)
         _fila_ctrl_graf.setSpacing(6)
-        _barra_sup = _crear_barra_zoom(self.grafico)
+        _barra_sup = _crear_barra_zoom(self.grafico, nombre_exportar="series")
         _fila_ctrl_graf.addWidget(_barra_sup)
 
         # Modo barras: dibuja cada serie como barras que salen de su MEDIA
@@ -7894,6 +8350,12 @@ class PanelCodatacion(QWidget):
         contiene "background-color: #2b2b2b" y ESTILO_CLARO contiene
         "background-color: #f0f0f0" — ambos definidos en estilos.py.
         """
+        # Los gráficos van primero, antes del `return` de más abajo: pyqtgraph
+        # pinta con sus propios colores y no se entera del cambio de tema por
+        # su cuenta, así que tienen que repintarse pase lo que pase con el
+        # stylesheet. Se recorren todos (principal, correlación móvil, perfil).
+        _gr.aplicar_a_todos(self)
+
         ss_app = QApplication.instance().styleSheet() or ""
 
         # Marcador robusto: el QMainWindow en ESTILO_OSCURO tiene #2b2b2b,
@@ -8537,12 +8999,12 @@ class PanelCodatacion(QWidget):
         info = QLabel(
             f"<b>Serie:</b> {nombre}<br>"
             f"<b>Rango actual:</b> {anio_medula_actual} → {anio_corteza_actual} "
-            f"<span style='color:#888;'>({n_anios} años)</span>"
+            f"<span style='color:{color_secundario()};'>({n_anios} años)</span>"
         )
         v.addWidget(info)
 
         hint = QLabel(
-            "<span style='color:#aaa; font-size:11px;'>"
+            f"<span style='color:{color_secundario()}; font-size:11px;'>"
             "Edita el campo que conozcas con certeza. El otro se "
             "ajusta automáticamente. Para series flotantes lo habitual "
             "es anclar el primer año (médula); para muestras con corteza "
@@ -9569,7 +10031,7 @@ class PanelCodatacion(QWidget):
         self.lbl_stats.setText(
             f"<div style='font-size:11px; line-height:1.5;'>"
             f"{umbrales_html}<br>"
-            f"<span style='color:#888;'>"
+            f"<span style='color:{color_secundario()};'>"
             f"💡 Pasá el mouse sobre las barras para ver r/GLK/t-BP/n de cada shift. "
             f"La fecha verdadera es donde las TRES métricas son altas simultáneamente — "
             f"si solo una es alta, suele ser coincidencia.</span>"
@@ -10515,7 +10977,7 @@ class PanelCodatacion(QWidget):
                             "</span><br><span style='font-size:9px;'>" + msg +
                             "</span><br><br>")
             elif tipo == "ambiguo":
-                cabecera = ("<span style='color:#888;'><b>Diagnóstico no concluyente</b>"
+                cabecera = (f"<span style='color:{color_secundario()};'><b>Diagnóstico no concluyente</b>"
                             "</span><br><span style='font-size:9px;'>" + msg +
                             "</span><br><br>")
 
@@ -10634,7 +11096,7 @@ class PanelCodatacion(QWidget):
             f"Serie: <b>{nombre.replace('📚 ', '')}</b><br>"
             f"Acción: <b>{accion}</b> en el año <b>{anio}</b><br>"
             f"Anillos: <b>{n0} → {n1}</b>{rango}<br>"
-            f"<span style='color:#888;'>Los años ≤ {anio} no cambian "
+            f"<span style='color:{color_secundario()};'>Los años ≤ {anio} no cambian "
             f"(médula fija).</span><br>"
             f"Correlación r: {self._fmt_r(sug['r_antes'])} → "
             f"{self._fmt_r(sug['r_tras'])} "
@@ -10901,7 +11363,7 @@ def _mostrar_dialogo_eps_rbar(parent, meta: dict, nombre_cronologia: str):
 
     lbl = QLabel(
         "<b>EPS (Expressed Population Signal)</b> — Wigley et al. (1984)<br>"
-        "<span style='color:#888; font-size:11px;'>"
+        f"<span style='color:{color_secundario()}; font-size:11px;'>"
         "EPS = (N·Rbar) / (1 + (N-1)·Rbar). Umbral 0.85 (línea gris).<br>"
         "Rbar = correlación promedio entre pares de series en cada ventana móvil.<br>"
         "Una EPS &lt; 0.85 indica que el promedio (cronología) no captura "
@@ -10913,6 +11375,7 @@ def _mostrar_dialogo_eps_rbar(parent, meta: dict, nombre_cronologia: str):
 
     plot_eps = pg.PlotWidget(title="EPS móvil")
     _agregar_hover_anio(plot_eps)
+    _gr.aplicar_a_pyqtgraph(plot_eps)
     plot_eps.showGrid(x=True, y=True, alpha=0.3)
     plot_eps.setYRange(0, 1.05)
     anios_eps = sorted(eps_dict.keys())
@@ -10927,6 +11390,7 @@ def _mostrar_dialogo_eps_rbar(parent, meta: dict, nombre_cronologia: str):
     if rbar_dict:
         plot_rbar = pg.PlotWidget(title="Rbar móvil")
         _agregar_hover_anio(plot_rbar)
+        _gr.aplicar_a_pyqtgraph(plot_rbar)
         plot_rbar.showGrid(x=True, y=True, alpha=0.3)
         anios_r = sorted(rbar_dict.keys())
         vals_r = [rbar_dict[a] for a in anios_r]
@@ -11048,6 +11512,11 @@ class VentanaCronologia(QWidget):
                 "border: 1px solid #ccc; border-radius: 3px; padding: 4px; }"
             )
         # Si no hay marcador reconocible, dejar sin estilizar.
+
+        # Los gráficos no se enteran solos del cambio de tema: pyqtgraph pinta
+        # con sus propios colores (fondo negro por omisión) y no mira el
+        # stylesheet ni la paleta de Qt.
+        _gr.aplicar_a_todos(self)
 
     def changeEvent(self, event):
         """Re-sincroniza el QTextEdit cuando cambia el tema de la app en caliente."""
@@ -11217,6 +11686,111 @@ class VentanaCronologia(QWidget):
         )
         form.addRow("Agregación:", self.combo_agreg)
 
+        # ── Opciones al modo de ARSTAN ────────────────────────────────────
+        # Van en una sección plegada porque la mayoría de las corridas no las
+        # necesita, pero sin ellas una cronología de DPI no es comparable con
+        # una de ARSTAN: su configuración por omisión usa DOBLE detrending.
+        self.grupo_arstan = SeccionColapsable("Opciones ARSTAN (avanzado)",
+                                              expandida=False)
+        _fa = QFormLayout()
+        _fa.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+
+        self.spin_rigidez1 = SpinBoxFlechas()
+        self.spin_rigidez1.setRange(-100, 999)
+        self.spin_rigidez1.setValue(32)
+        self.spin_rigidez1.setSuffix(" años / -%")
+        self.spin_rigidez1.setToolTip(
+            "Rigidez del PRIMER ajuste, solo si es spline.\n\n"
+            "Positivo = años (32 es el corte del 50 % a 32 años).\n"
+            "NEGATIVO = porcentaje del largo de CADA serie: -67 da un spline\n"
+            "de 67 años en una serie de 100 y de 268 en una de 400.\n\n"
+            "La forma negativa es la que permite tratar series de distinto\n"
+            "largo de manera comparable.")
+        _fa.addRow("Rigidez 1ª curva:", self.spin_rigidez1)
+
+        self.combo_metodo2 = QComboBox()
+        self.combo_metodo2.addItem("ninguno (un solo detrending)", "")
+        for m in ("spline", "negexp", "linear", "media_movil", "media"):
+            self.combo_metodo2.addItem(m, m)
+        self.combo_metodo2.setToolTip(
+            "SEGUNDO ajuste, aplicado sobre los índices del primero.\n\n"
+            "Es el valor POR OMISIÓN de ARSTAN: su configuración inicial es\n"
+            "exponencial negativa y después spline de 128 años.\n\n"
+            "El manual explica por qué: la exponencial ajusta bien el tercio\n"
+            "inicial, pero después puede ir muchas décadas por encima o por\n"
+            "debajo del crecimiento real. El segundo ajuste corrige ese desvío.")
+        _fa.addRow("2ª curva:", self.combo_metodo2)
+
+        self.spin_rigidez2 = SpinBoxFlechas()
+        self.spin_rigidez2.setRange(-100, 999)
+        self.spin_rigidez2.setValue(128)
+        self.spin_rigidez2.setSuffix(" años / -%")
+        self.spin_rigidez2.setToolTip(
+            "Rigidez de la segunda curva. 128 años es el valor de ARSTAN.")
+        _fa.addRow("Rigidez 2ª curva:", self.spin_rigidez2)
+
+        self.spin_rig_min = SpinBoxFlechas()
+        self.spin_rig_min.setRange(0, 500)
+        self.spin_rig_min.setValue(0)
+        self.spin_rig_min.setSuffix(" años")
+        self.spin_rig_min.setToolTip(
+            "Rigidez MÍNIMA: el spline nunca baja de este valor.\n\n"
+            "Sirve con la rigidez porcentual, para no ajustar curvas muy\n"
+            "flexibles a series cortas, que las dejaría con una estructura de\n"
+            "persistencia distinta a la de las largas. 0 = sin mínimo.")
+        _fa.addRow("Rigidez mínima:", self.spin_rig_min)
+
+        self.chk_estabilizar = QCheckBox("Estabilizar varianza")
+        self.chk_estabilizar.setToolTip(
+            "Compensa los cambios de varianza a lo largo de la serie.\n\n"
+            "Ajusta un spline a los valores ABSOLUTOS de las desviaciones\n"
+            "respecto de la media, divide por esa curva y restituye los signos.\n"
+            "Sirve cuando la varianza cambia mucho en el tiempo, porque si no\n"
+            "los tramos de varianza alta dominan la cronología.")
+        _fa.addRow("", self.chk_estabilizar)
+
+        self.spin_rig_estab = SpinBoxFlechas()
+        self.spin_rig_estab.setRange(-100, 999)
+        self.spin_rig_estab.setValue(64)
+        self.spin_rig_estab.setSuffix(" años / -%")
+        self.spin_rig_estab.setToolTip(
+            "Rigidez del spline de estabilización.\n\n"
+            "Es un compromiso, medido sobre seis series largas de ciprés como\n"
+            "razón entre la desviación máxima y la mínima en ventanas de 60\n"
+            "años (1,00 sería varianza perfectamente estable):\n\n"
+            "   sin estabilizar   2,15\n"
+            "   spline 128 años   1,56\n"
+            "   spline  64 años   1,39   <- valor por omisión\n"
+            "   spline  32 años   1,29\n\n"
+            "Más flexible estabiliza mejor, pero también aplana amplitudes que\n"
+            "pueden ser reales.")
+        _fa.addRow("Rigidez estab.:", self.spin_rig_estab)
+
+        self.chk_normalizar = QCheckBox("Normalizar a varianza 1")
+        self.chk_normalizar.setToolTip(
+            "Lleva cada serie a varianza 1 antes de promediar, para que todas\n"
+            "pesen igual en la cronología.\n\n"
+            "Sin esto, las series más variables dominan el promedio.")
+        _fa.addRow("", self.chk_normalizar)
+
+        self.chk_por_resta = QCheckBox("Índices por resta (no división)")
+        self.chk_por_resta.setToolTip(
+            "Calcula el índice como serie MENOS curva, en vez de dividida.\n\n"
+            "ARSTAN permite las dos. Con series transformadas a logaritmos,\n"
+            "la resta es lo natural.")
+        _fa.addRow("", self.chk_por_resta)
+
+        self.chk_log_arstan = QCheckBox("Logaritmo antes de ajustar")
+        self.chk_log_arstan.setToolTip(
+            "Toma el logaritmo del ancho (sumando un sexto de la media) ANTES\n"
+            "de ajustar la curva. Es la transformación de datos de ARSTAN.")
+        _fa.addRow("", self.chk_log_arstan)
+
+        _cont_ar = QWidget()
+        _cont_ar.setLayout(_fa)
+        self.grupo_arstan.agregar_widget(_cont_ar)
+        form.addRow(self.grupo_arstan)
+
         # ── Transformación logarítmica (estilo COFECHA) ──────────────
         # Aplica log(índice + media/6) antes del modelo AR, igual que
         # COFECHA (Holmes 1983). Comprime los anillos anchos y suele subir
@@ -11314,8 +11888,14 @@ class VentanaCronologia(QWidget):
         self.grafico = pg.PlotWidget(title="Cronología")
         _agregar_hover_anio(self.grafico)
         self.grafico.showGrid(x=True, y=True, alpha=0.3)
+        _gr.aplicar_a_pyqtgraph(self.grafico)
         right_layout.addWidget(self.grafico, 1)
-        right_layout.addWidget(_crear_barra_zoom(self.grafico))
+        # El umbral 0.85 del EPS es una línea de referencia del gráfico, no una
+        # curva de datos, así que se pasa aparte para que la figura exportada
+        # la dibuje como tal.
+        right_layout.addWidget(_crear_barra_zoom(
+            self.grafico, nombre_exportar="cronologia",
+            lineas_h_exportar=[(0.85, "EPS 0.85")]))
 
         splitter.addWidget(right)
         splitter.setStretchFactor(0, 1)
@@ -11512,6 +12092,30 @@ class VentanaCronologia(QWidget):
         # hacerlo en silencio deja años cuyo índice no significa lo mismo que
         # el del resto de la serie. Acá se detectan, se cuentan, y se le da al
         # usuario la opción de estandarizarlas con otro método.
+        # Opciones ARSTAN: solo se activan si el usuario tocó alguna, para
+        # que una corrida corriente siga dando exactamente lo de siempre.
+        try:
+            m2 = self.combo_metodo2.currentData() or None
+            ar_ops = {
+                "metodo1": metodo,
+                "rigidez1": int(self.spin_rigidez1.value()),
+                "metodo2": m2,
+                "rigidez2": int(self.spin_rigidez2.value()),
+                "rigidez_minima": int(self.spin_rig_min.value()),
+                "estabilizar": bool(self.chk_estabilizar.isChecked()),
+                "rigidez_estab": int(self.spin_rig_estab.value()),
+                "normalizar": bool(self.chk_normalizar.isChecked()),
+                "por_resta": bool(self.chk_por_resta.isChecked()),
+                "log_previo": bool(self.chk_log_arstan.isChecked()),
+            }
+            usa_arstan = bool(m2 or ar_ops["estabilizar"] or ar_ops["normalizar"]
+                              or ar_ops["por_resta"] or ar_ops["log_previo"]
+                              or ar_ops["rigidez_minima"]
+                              or ar_ops["rigidez1"] < 0)
+            self._arstan_ops = ar_ops if usa_arstan else None
+        except Exception:
+            self._arstan_ops = None
+
         self._metodo_alterno = None
         self._metodos_por_serie = {}
         self._series_alternas = []
@@ -11585,6 +12189,7 @@ class VentanaCronologia(QWidget):
                     metodo_alterno=self._metodo_alterno,
                     series_alternas=self._series_alternas,
                     metodos_por_serie=self._metodos_por_serie,
+                    arstan=self._arstan_ops,
                 )
                 meta["curvas_negativas"] = {
                     n: {"n_parches": d["n_parches"], "total": d["total"],
@@ -11594,6 +12199,7 @@ class VentanaCronologia(QWidget):
                 meta["metodo_alterno"] = self._metodo_alterno
                 meta["series_alternas"] = list(self._series_alternas)
                 meta["metodos_por_serie"] = dict(self._metodos_por_serie)
+                meta["arstan_ops"] = dict(self._arstan_ops or {})
                 nombre = f"{nombre_base}_{tipo}" if len(tipos) > 1 else nombre_base
                 meta["nombre"] = nombre
 
@@ -12203,7 +12809,7 @@ class VentanaCronologia(QWidget):
         EPS ≥ 0.85 desde: <b>{conf_txt}</b><br>
         {arboles_txt}
         SSS ≥ 0.85 desde: <b>{sss_txt}</b>
-        &nbsp;<span style='color:#999;'>(señal conservada respecto de la
+        &nbsp;<span style='color:{color_secundario()};'>(señal conservada respecto de la
         colección completa)</span><br>
         <br>
         <b>Señal común</b><br>
@@ -12216,7 +12822,7 @@ class VentanaCronologia(QWidget):
         Sensibilidad media (MS): <b>{f(ms)}</b><br>
         Autocorrelación AR1: {f(ar1)}<br>
         <br>
-        <span style='color:#888;'>Archivo: {meta.get('archivo', '—')}</span>
+        <span style='color:{color_secundario()};'>Archivo: {meta.get('archivo', '—')}</span>
         </div>
         """
         self.txt_info.setHtml(html)

@@ -39,6 +39,9 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSettings, QEvent
 
+from estilos import SECUNDARIO_QSS, color_secundario
+import json_seguro as _js
+import estilos_graficos as _gr
 from modulo_codatacion import leer_archivo_tucson, leer_wid
 from modulo_autodeteccion import (
     cargar_perfiles, guardar_perfiles,
@@ -4289,7 +4292,7 @@ class PestanaImagen(QWidget):
         self._btn_toggle_barra.setFixedHeight(18)
         self._btn_toggle_barra.setStyleSheet(
             "QPushButton{font-size:10px; padding:0px 6px; border:none; "
-            "color:#888; background:transparent;}"
+            f"color:{SECUNDARIO_QSS}; background:transparent;}}"
             "QPushButton:hover{color:white; background:#555;}"
         )
         self._btn_toggle_barra.setToolTip("Mostrar/ocultar barra de herramientas (Ctrl+H)")
@@ -4794,7 +4797,7 @@ class PestanaImagen(QWidget):
         self._btn_toggle_grafico.setFixedHeight(18)
         self._btn_toggle_grafico.setStyleSheet(
             "QPushButton{font-size:10px; padding:0px 6px; border:none; "
-            "color:#888; background:transparent;}"
+            f"color:{SECUNDARIO_QSS}; background:transparent;}}"
             "QPushButton:hover{color:white; background:#555;}"
         )
         self._btn_toggle_grafico.setToolTip("Mostrar/ocultar panel de gráfico (Ctrl+G)")
@@ -4860,7 +4863,7 @@ class PestanaImagen(QWidget):
             "background-color:#5bc0de; color:white; font-weight:bold;")
         self.btn_cargar_wid.clicked.connect(self._cargar_serie_wid)
         self.lbl_nombre_maestra = QLabel("Ninguna")
-        self.lbl_nombre_maestra.setStyleSheet("color:#aaaaaa;")
+        self.lbl_nombre_maestra.setStyleSheet(f"color:{SECUNDARIO_QSS};")
         fila_maestra.addWidget(self.btn_cargar_maestra)
         fila_maestra.addWidget(self.btn_cargar_wid)
         fila_maestra.addWidget(self.lbl_nombre_maestra)
@@ -4976,6 +4979,7 @@ class PestanaImagen(QWidget):
 
         # ── Gráfico de series ─────────────────────────────────────────────
         self.grafico_unif = pg.PlotWidget()
+        _gr.aplicar_a_pyqtgraph(self.grafico_unif)
         self.grafico_unif.showGrid(x=True, y=True, alpha=0.3)
         self.grafico_unif.setLabel("bottom", "Año")
         self.grafico_unif.setLabel("left",   "Ancho (mm)")
@@ -5455,6 +5459,24 @@ class PestanaImagen(QWidget):
             self.combo_especie.setCurrentText(self._especie_activa)
         self.combo_especie.blockSignals(False)
 
+    def _guardar_perfiles_especie(self):
+        """Guarda los perfiles y AVISA si no se pudo.
+
+        Antes el fallo se tragaba y solo quedaba en el registro: el usuario
+        afinaba una especie, pulsaba guardar, no veía nada raro y al reiniciar
+        el perfil no estaba. Si falla hay que decirlo, porque es trabajo suyo
+        el que se pierde.
+        """
+        from modulo_autodeteccion import guardar_perfiles, RUTA_PERFILES
+        try:
+            guardar_perfiles(self._perfiles_especie)
+        except Exception as exc:
+            QMessageBox.warning(
+                self, "No se pudo guardar el perfil de especie",
+                f"El perfil quedó activo en esta sesión, pero no se pudo "
+                f"escribir en disco, así que se perderá al cerrar DPI.\n\n"
+                f"Archivo: {RUTA_PERFILES}\n{exc}")
+
     def _al_cambiar_especie(self, nombre: str):
         if nombre in self._perfiles_especie:
             self._especie_activa = nombre
@@ -5465,7 +5487,7 @@ class PestanaImagen(QWidget):
         dlg = DialogoEspecie(self._especie_activa, perfil, self)
         if dlg.exec():
             self._perfiles_especie[self._especie_activa] = dlg.obtener_perfil()
-            guardar_perfiles(self._perfiles_especie)
+            self._guardar_perfiles_especie()
 
     def _nueva_especie(self):
         """Crea un perfil de especie nuevo a partir del nombre que ingrese el usuario."""
@@ -5540,7 +5562,7 @@ class PestanaImagen(QWidget):
         if banda_nueva != perfil.get("banda_px", 5):
             perfil["banda_px"] = banda_nueva
             self._perfiles_especie[self._especie_activa] = perfil
-            guardar_perfiles(self._perfiles_especie)
+            self._guardar_perfiles_especie()
             dist, intens = extraer_perfil(
                 imagen_bgr, p1, p2,
                 canal=perfil.get("canal", "gray"),
@@ -5750,7 +5772,7 @@ class PestanaImagen(QWidget):
         self.serie_maestra = None
         self.nombre_maestra = "Ninguna"
         self.lbl_nombre_maestra.setText("Ninguna")
-        self.lbl_nombre_maestra.setStyleSheet("color:#aaaaaa;")
+        self.lbl_nombre_maestra.setStyleSheet(f"color:{SECUNDARIO_QSS};")
         self.btn_eliminar_maestra.setEnabled(False)
         # Limpiar items del gráfico que referenciaban la externa
         self._plot_items = {k: v for k, v in getattr(self, "_plot_items", {}).items()
@@ -6183,7 +6205,7 @@ class PestanaImagen(QWidget):
             partes_total.append(
                 f"<span style='color:{color}'><b>{nombre}</b></span>"
                 f"&nbsp;<span style='color:{c}'>{sym}&nbsp;r={val}</span>"
-                f"&nbsp;<span style='color:#666666'>({n_ov} años)</span>"
+                f"&nbsp;<span style='color:{color_secundario()}'>({n_ov} años)</span>"
             )
 
         self.lbl_r_total.setText("&nbsp;&nbsp;&nbsp;".join(partes_total))
@@ -6203,12 +6225,12 @@ class PestanaImagen(QWidget):
                     r_v = float(np.mean(res[1]))
                     c = _col(r_v)
                     celdas.append(
-                        f"<span style='color:#888888'>{v}a:</span>"
+                        f"<span style='color:{color_secundario()}'>{v}a:</span>"
                         f"<span style='color:{c}'>&nbsp;{r_v:+.2f}</span>"
                     )
                 else:
                     celdas.append(
-                        f"<span style='color:#888888'>{v}a:&nbsp;—</span>"
+                        f"<span style='color:{color_secundario()}'>{v}a:&nbsp;—</span>"
                     )
             lineas_ventana.append("&nbsp;&nbsp;".join(celdas))
 
@@ -6839,7 +6861,7 @@ class PestanaImagen(QWidget):
             "todas las mediciones existentes."
         )
         ayuda.setWordWrap(True)
-        ayuda.setStyleSheet("color: #888; font-style: italic;")
+        ayuda.setStyleSheet(f"color: {SECUNDARIO_QSS}; font-style: italic;")
         layout.addWidget(ayuda)
 
         # Spin box para override
@@ -7194,9 +7216,13 @@ class PestanaImagen(QWidget):
                     "codigo": self.input_codigo.text(),
                 },
             }
-            with open(self._ruta_json(), "w") as f:
-                json.dump(datos, f)
-        except OSError as exc:
+            _js.guardar_json(self._ruta_json(), datos, indent=None)
+        except Exception as exc:
+            # Antes solo se atrapaba OSError. Este es el autoguardado del
+            # trabajo en curso y corre solo, sin que el usuario lo pida: si un
+            # dato no serializable se colara en `datos`, el TypeError subía y
+            # cortaba la acción que hubiera disparado el guardado. Que falle
+            # el autoguardado es malo, pero tumbar la medición en curso es peor.
             logger.warning("No se pudo guardar el estado: %s", exc)
 
     def _cargar_estado(self) -> bool:
@@ -8521,6 +8547,7 @@ class PestanaImagen(QWidget):
         lay = QVBoxLayout(win)
 
         pw = pg.PlotWidget()
+        _gr.aplicar_a_pyqtgraph(pw)
         pw.showGrid(x=True, y=True, alpha=0.3)
         pw.setLabel("bottom", "Año")
         pw.setLabel("left",   "Intensidad (0-255)")
@@ -8773,8 +8800,7 @@ class PestanaImagen(QWidget):
             pith_est = getattr(self, "_pith_estimacion", None)
             if pith_est:
                 datos.update(pith_est)
-            with open(ruta_s, "w", encoding="utf-8") as fh:
-                json.dump(datos, fh, ensure_ascii=False, indent=2)
+            _js.guardar_json(ruta_s, datos)
         except Exception as e:
             logger.warning("No se pudo guardar sidecar: %s", e)
 

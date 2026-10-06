@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
 )
 
 from modulo_codatacion import leer_tucson_multi
+from estilos import SECUNDARIO_QSS, color_secundario
 from constantes import (
     TUCSON_MAX_CHARS_ID, TUCSON_VALOR_FIN, TUCSON_VALOR_999,
     TUCSON_DIVISOR,
@@ -368,7 +369,7 @@ class DialogoUnirRwl(QDialog):
             "sobre la lista o usar el botón para agregarlos."
         )
         descripcion.setWordWrap(True)
-        descripcion.setStyleSheet("color: #888; font-style: italic;")
+        descripcion.setStyleSheet(f"color: {SECUNDARIO_QSS}; font-style: italic;")
         layout.addWidget(descripcion)
 
         # ── Sección: lista de archivos ─────────────────────────────────────
@@ -649,7 +650,8 @@ class DialogoUnirRwl(QDialog):
             linea3 = (f"<br>⚠ <b>{len(ids_duplicados)} ID{'s' if len(ids_duplicados) != 1 else ''} "
                       f"duplicado{'s' if len(ids_duplicados) != 1 else ''}</b> "
                       f"entre archivos: <i>{preview}{extras}</i>")
-            linea3 += "<br><span style='color:#888'>Se aplicará la estrategia seleccionada abajo.</span>"
+            linea3 += (f"<br><span style='color:{color_secundario()}'>"
+                       "Se aplicará la estrategia seleccionada abajo.</span>")
         else:
             linea3 = "<br>✓ Sin conflictos de IDs duplicados."
 

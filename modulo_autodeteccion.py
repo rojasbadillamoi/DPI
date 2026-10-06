@@ -30,15 +30,43 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPen, QColor
 
+import json_seguro as _js
+import estilos_graficos as _gr
+
 import pyqtgraph as pg
 
 logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------
-# Ruta del archivo de perfiles
+# Rutas del archivo de perfiles
 # ------------------------------------------------------------------
+# Hay DOS archivos, y la distinción importa:
+#
+#   · el de FÁBRICA viaja junto al programa y es de solo lectura. Cuando DPI
+#     se instala con el .deb o con el instalador de Windows queda en una
+#     carpeta del sistema que pertenece a root (/usr/lib/... o Program Files).
+#   · el del USUARIO vive en su carpeta personal y es donde se guarda todo lo
+#     que afine.
+#
+# Antes había uno solo, el de al lado del programa. Corriendo desde el código
+# fuente funcionaba, pero instalado el usuario no tiene permiso de escritura
+# ahí: creaba un perfil de especie, pulsaba guardar, no veía ningún error
+# —el fallo solo iba al registro— y al reiniciar el perfil no estaba.
 _DIR = os.path.dirname(os.path.abspath(__file__))
-RUTA_PERFILES = os.path.join(_DIR, "species_profiles.json")
+RUTA_PERFILES_FABRICA = os.path.join(_DIR, "species_profiles.json")
+
+
+def _carpeta_config() -> str:
+    """Carpeta de configuración del usuario, según el estándar de cada sistema."""
+    if os.name == "nt":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+    else:
+        base = (os.environ.get("XDG_CONFIG_HOME")
+                or os.path.join(os.path.expanduser("~"), ".config"))
+    return os.path.join(base, "moicedrus-dpi")
+
+
+RUTA_PERFILES = os.path.join(_carpeta_config(), "species_profiles.json")
 
 # Perfil por defecto (coníferas con escáner plano)
 PERFIL_DEFECTO = {
@@ -56,22 +84,43 @@ PERFIL_DEFECTO = {
 # GESTIÓN DE PERFILES DE ESPECIE
 # =============================================================================
 
+def _leer(ruta: str) -> dict:
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            datos = json.load(f)
+        return datos if isinstance(datos, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("No se pudo leer %s: %s", ruta, exc)
+        return {}
+
+
 def cargar_perfiles() -> dict:
-    if os.path.exists(RUTA_PERFILES):
-        try:
-            with open(RUTA_PERFILES, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("No se pudo leer species_profiles.json: %s", exc)
-    return {"Conífera (defecto)": PERFIL_DEFECTO.copy()}
+    """Perfiles de fábrica más los del usuario, que mandan sobre los de fábrica.
+
+    Se combinan en vez de elegir uno: así el usuario conserva lo suyo y además
+    recibe los perfiles nuevos que traiga cada versión del programa. Si edita
+    un perfil de fábrica, su versión es la que vale.
+    """
+    perfiles = {"Conífera (defecto)": PERFIL_DEFECTO.copy()}
+    perfiles.update(_leer(RUTA_PERFILES_FABRICA))
+    perfiles.update(_leer(RUTA_PERFILES))
+    return perfiles
 
 
 def guardar_perfiles(perfiles: dict):
+    """Guarda los perfiles en la carpeta del usuario.
+
+    Escritura atómica: son ajustes que se afinan especie por especie, y
+    perderlos por un guardado a medias obliga a rehacer ese trabajo a mano.
+    """
     try:
-        with open(RUTA_PERFILES, "w", encoding="utf-8") as f:
-            json.dump(perfiles, f, indent=2, ensure_ascii=False)
-    except OSError as exc:
-        logger.error("No se pudo guardar species_profiles.json: %s", exc)
+        os.makedirs(os.path.dirname(RUTA_PERFILES), exist_ok=True)
+        _js.guardar_json(RUTA_PERFILES, perfiles)
+    except Exception as exc:
+        logger.error("No se pudo guardar %s: %s", RUTA_PERFILES, exc)
+        raise
 
 
 # =============================================================================
@@ -369,6 +418,7 @@ class DialogoPreviewDeteccion(QDialog):
 
         # Gráfico del perfil
         self._plot = pg.PlotWidget(title="Perfil de intensidad a lo largo del radio")
+        _gr.aplicar_a_pyqtgraph(self._plot)
         self._plot.showGrid(x=True, y=True, alpha=0.3)
         self._plot.setLabel("bottom", "Distancia (mm)")
         self._plot.setLabel("left",   "Intensidad")

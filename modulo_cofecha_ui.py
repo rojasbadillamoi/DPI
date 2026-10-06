@@ -18,7 +18,7 @@ import os
 import pandas as pd
 import os
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings, QEvent
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget,
@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
 
 import modulo_cofecha as _cof
 import modulo_cofecha_salida as _sal
+from estilos import SECUNDARIO_QSS, color_secundario
 from modulo_codatacion import (
     leer_tucson_multi, leer_tabular, leer_columna_multi_hojas,
     RIGIDEZ_SPLINE_DEFECTO, _es_planilla,
@@ -96,13 +97,10 @@ class PestanaCofecha(QWidget):
     def _construir_ui(self):
         layout = QVBoxLayout(self)
 
-        cabecera = QLabel(
-            "<b>Análisis de cofechado de la colección</b> — "
-            "<span style='color:#888;'>carga todas las series juntas; el maestro "
-            "se recalcula excluyendo cada serie (leave-one-out), como en COFECHA."
-            "</span>")
-        cabecera.setWordWrap(True)
-        layout.addWidget(cabecera)
+        self._lbl_cabecera = QLabel()
+        self._lbl_cabecera.setWordWrap(True)
+        self._pintar_cabecera()
+        layout.addWidget(self._lbl_cabecera)
 
         split = QSplitter(Qt.Orientation.Horizontal)
 
@@ -130,7 +128,7 @@ class PestanaCofecha(QWidget):
 
         self.lbl_resumen = QLabel("Sin series cargadas.")
         self.lbl_resumen.setWordWrap(True)
-        self.lbl_resumen.setStyleSheet("color:#888; font-size:11px;")
+        self.lbl_resumen.setStyleSheet(f"color:{SECUNDARIO_QSS}; font-size:11px;")
         lay_izq.addWidget(self.lbl_resumen)
 
         # Opciones equivalentes a las de COFECHA
@@ -270,6 +268,30 @@ class PestanaCofecha(QWidget):
         split.setStretchFactor(1, 1)
         split.setSizes([330, 900])
         layout.addWidget(split, 1)
+
+    # ------------------------------------------------------------------
+    # Tema
+    # ------------------------------------------------------------------
+    def _pintar_cabecera(self):
+        """Arma el texto de la cabecera con el gris del tema activo.
+
+        El color va dentro del HTML y no en la hoja de estilos porque solo
+        aplica a la segunda mitad de la frase. Eso obliga a rearmarlo a mano:
+        Qt resuelve los colores del texto enriquecido una sola vez, al
+        interpretarlo, así que un cambio de tema no los actualiza solo.
+        """
+        self._lbl_cabecera.setText(
+            "<b>Análisis de cofechado de la colección</b> — "
+            f"<span style='color:{color_secundario()};'>carga todas las series "
+            "juntas; el maestro se recalcula excluyendo cada serie "
+            "(leave-one-out), como en COFECHA.</span>")
+
+    def changeEvent(self, event):
+        """Repinta lo que lleva color incrustado cuando cambia el tema."""
+        super().changeEvent(event)
+        if event.type() in (QEvent.Type.PaletteChange,
+                            QEvent.Type.ApplicationPaletteChange):
+            self._pintar_cabecera()
 
     # ------------------------------------------------------------------
     # Carga de series

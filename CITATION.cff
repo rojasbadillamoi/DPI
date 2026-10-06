@@ -4,6 +4,7 @@
 # rellenar los metadatos del DOI. Tiene que estar en la raíz del repositorio y
 # llamarse exactamente CITATION.cff.
 #
+# ANTES DE SUBIR, completa los campos marcados con «REVISAR».
 
 cff-version: 1.2.0
 message: "Si usas este programa en un trabajo publicado, por favor cítalo así."
@@ -20,18 +21,19 @@ abstract: >-
 authors:
   - family-names: "Rojas-Badilla"
     given-names: "Moisés E."
-    # orcid: "https://orcid.org/0000-0002-1101-2280"
-    # afiliación al momento de publicar
-    affiliation: ""
+    # REVISAR: agrega tu ORCID si lo tienes. Zenodo lo usa para vincular el
+    # trabajo a tu perfil de autor, y vale la pena.
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+    # REVISAR: afiliación al momento de publicar
+    affiliation: "Universidad de La Frontera, Temuco, Chile"
 
-version: "2.3.0"
-doi: "10.5281/zenodo.22780901"
-# la fecha del día en que publiques la versión
-date-released: "2026-09-15"
+version: "2.4.0"
+# REVISAR: la fecha del día en que publiques la versión
+date-released: "2026-09-11"
 
 license: GPL-3.0-or-later
-repository-code: "https://github.com/rojasbadillamoi/DPI"
-url: "https://github.com/rojasbadillamoi/DPI"
+repository-code: "https://github.com/USUARIO/DPI"   # REVISAR
+url: "https://github.com/USUARIO/DPI"               # REVISAR
 
 keywords:
   - dendrochronology

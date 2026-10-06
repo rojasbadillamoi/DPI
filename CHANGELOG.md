@@ -1,12 +1,83 @@
 # DPI — Registro de cambios
 
-**Dendro Pixel Interface 2.3.0 · Suite MoiCedrus**
-Desde la versión 2.0.0 hasta la 2.3.0
+**Dendro Pixel Interface 2.4.0 · Suite MoiCedrus**
+Desde la versión 2.0.0 hasta la 2.4.0
 
 Cada cambio dice qué se hizo y, cuando corresponde, con qué evidencia se
 decidió. Los que corrigen un error real de DPI van marcados con **[error]**;
 los que acercan el programa a COFECHA, con **[fidelidad]**; los que agregan
 capacidad, con **[nuevo]**.
+
+---
+
+# 0. Versión 2.4.0 — interfaz, figuras y durabilidad
+
+## 0.1 El tema oscuro era ilegible en Windows **[error]**
+
+En Windows, con el tema oscuro puesto, el informe de la pestaña COFECHA salía
+en blanco sobre blanco. En Linux se veía bien, y por eso había pasado
+inadvertido.
+
+La causa: un tema en Qt tiene dos mitades y DPI solo aplicaba una. La hoja de
+estilos pintaba la LETRA de blanco, pero el FONDO lo seguía decidiendo la
+paleta del sistema, y para los editores de texto no había ninguna regla. Con
+el tema oscuro de GNOME esa paleta ya era oscura y todo funcionaba por
+casualidad; la paleta de Windows es clara.
+
+Reproducido midiendo los píxeles renderizados con una paleta clara de sistema:
+antes el widget quedaba con fondo `#ffffff`, dos colores distintos en toda su
+superficie y 0,55 % de tinta —el borde—; después, fondo `#1e1e1e` y 12,3 % de
+tinta. Ahora `estilos.aplicar_tema` fija paleta y hoja de estilos juntas, y
+fuerza el estilo «Fusion», que respeta la paleta en las tres plataformas.
+
+## 0.2 Texto secundario con poco contraste **[error]**
+
+Las etiquetas de apoyo usaban grises fijos (`#888`, `#aaa`, `#ccc`) que en modo
+claro quedaban entre 1,19:1 y 3,54:1, por debajo del 4,5:1 que pide la WCAG.
+Se comprobó que no existe un gris único que sirva para los dos temas, así que
+ahora salen del rol `PlaceholderText` de la paleta: 4,7:1 en claro y 5,0:1 en
+oscuro. Se respetaron los grises que van sobre paneles de fondo fijo, donde
+cambiarlos los habría roto.
+
+## 0.3 Los gráficos no cambiaban de color con el tema **[error]**
+
+pyqtgraph pinta con sus propios colores y no mira la paleta de Qt: el fondo por
+omisión es negro, también con el tema claro. Ahora los gráficos se pintan con
+la paleta del tema y se repintan al alternarlo. Verificado por píxeles en los
+cinco gráficos principales (series, cronología, correlación móvil, perfil de
+quiebre y skeleton).
+
+## 0.4 Descarga de figuras para publicar **[nuevo]**
+
+Botón «Descargar» en los gráficos de cronología y de series. No es una captura:
+la figura se vuelve a dibujar con matplotlib, así que la calidad no depende del
+tamaño de la ventana. Permite elegir paleta (Claro, Oscuro, Alto contraste,
+Sepia —las mismas de Veta—), formato (PNG, SVG, PDF), resolución y tamaño en
+centímetros. Se exporta lo que está visible: una serie oculta desde la leyenda
+no aparece. La carpeta y los ajustes se recuerdan entre sesiones.
+
+matplotlib se importa solo al exportar; si falta, el resto del programa
+funciona igual.
+
+## 0.5 Los metadatos de cronología se guardaban truncados **[error]**
+
+El `.json` de metadatos quedaba cortado a la mitad e ilegible, y al reabrir la
+cronología se perdía **todo** el metadato, no solo el campo culpable.
+
+La causa: `json.dump` no sabe escribir objetos de numpy ni de pandas
+—`sample_depth` es una `pd.Series`, y `EPS_movil` trae claves `np.int64`— y
+aborta a mitad de camino, pero como escribe directo sobre el archivo, lo ya
+volcado queda en disco. Medido: 376 bytes de JSON inválido donde debían ir 808.
+
+Ahora hay un sanitizador compartido (`json_seguro.py`) y la escritura es
+atómica: se escribe en un temporal y recién al final reemplaza al definitivo,
+de modo que un fallo no puede dejar un archivo a medias pisando al bueno. Se
+aplicó también al sidecar de anomalías, al autoguardado de la medición y a los
+perfiles de especie, que corrían el mismo riesgo.
+
+Conviene saber cuál es el riesgo real, porque no es evidente: `np.float64` sí
+se serializa —es subclase de `float`—, pero `np.int64`, `np.float32`,
+`np.bool_`, `ndarray`, `Series` y `Timestamp` no.
 
 ---
 
