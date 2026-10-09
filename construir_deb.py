@@ -120,6 +120,99 @@ lanzador.chmod(0o755)
     "Keywords=dendrocronologia;anillos;arboles;cofechado;tree-ring;\n"
     "StartupNotify=true\n", encoding="utf-8")
 
+# ── 4 bis. Metadatos AppStream ────────────────────────────────────────────
+# Esto es lo que lee el Centro de Software de Ubuntu (GNOME Software). NO lee
+# el archivo «control» de Debian: sin este XML la aplicación aparece sin
+# licencia, sin sitio web y sin fecha de última actualización.
+#
+# La fecha de publicación se toma de CITATION.cff para no tener dos fuentes
+# que se contradigan.
+import re as _re
+_cff = (ORIGEN / "CITATION.cff").read_text(encoding="utf-8")
+_m = _re.search(r'^date-released:\s*"?(\d{4}-\d{2}-\d{2})"?', _cff, _re.M)
+FECHA = _m.group(1) if _m else "1970-01-01"
+
+# Identificador en notación de dominio invertido, que es lo que pide AppStream.
+# El <launchable> lo conecta con el .desktop, que conserva su propio nombre
+# porque tiene que coincidir con setDesktopFileName().
+# Todo en minúsculas: AppStream lo pide así, y cambiar el identificador una vez
+# publicado hace que el Centro de Software lo trate como otra aplicación.
+APPSTREAM_ID = "io.github.rojasbadillamoi.dpi"
+
+METAINFO = RAIZ / "usr/share/metainfo"
+METAINFO.mkdir(parents=True, exist_ok=True)
+(METAINFO / f"{APPSTREAM_ID}.metainfo.xml").write_text(
+    f"""<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>{APPSTREAM_ID}</id>
+  <launchable type="desktop-id">{APP_ID}.desktop</launchable>
+
+  <name>{APP_NOMBRE}</name>
+  <summary>Medición de anillos de crecimiento y co-datación</summary>
+  <summary xml:lang="en">Tree-ring measurement and crossdating</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <developer id="io.github.rojasbadillamoi">
+    <name>Moisés E. Rojas-Badilla</name>
+  </developer>
+
+  <description>
+    <p>
+      Programa de escritorio para medir el ancho de los anillos de crecimiento
+      sobre imagen digitalizada, co-datar series dendrocronológicas y controlar
+      la calidad del fechado, todo en un mismo lugar.
+    </p>
+    <p>Incluye:</p>
+    <ul>
+      <li>Medición sobre la imagen, con detección automática de límites de anillo configurable por especie.</li>
+      <li>Intensidad de madera (Blue Intensity) y estimación de médula faltante.</li>
+      <li>Co-datación por correlación móvil, con un localizador del año donde se rompe la datación.</li>
+      <li>Diagrama de skeleton-plot digital.</li>
+      <li>Control de calidad compatible con COFECHA sobre la colección completa.</li>
+      <li>Construcción de cronologías con estadísticos de señal común (Rbar entre árboles, EPS y SSS).</li>
+      <li>Exportación de figuras para publicar en PNG, SVG y PDF.</li>
+    </ul>
+    <p>
+      Las series se exportan en formato Tucson, compatible con COFECHA, ARSTAN,
+      CDendro y dplR.
+    </p>
+    <p>
+      Parte de la MoiCedrus Dendrochronological Suite, desarrollada por
+      Moisés E. Rojas-Badilla.
+    </p>
+  </description>
+
+  <categories>
+    <category>Science</category>
+    <category>Geoscience</category>
+  </categories>
+
+  <keywords>
+    <keyword>dendrocronología</keyword>
+    <keyword>anillos</keyword>
+    <keyword>árboles</keyword>
+    <keyword>cofechado</keyword>
+    <keyword>dendrochronology</keyword>
+    <keyword>tree rings</keyword>
+    <keyword>crossdating</keyword>
+    <keyword>COFECHA</keyword>
+  </keywords>
+
+  <url type="homepage">https://rojasbadillamoi.github.io/</url>
+  <url type="bugtracker">https://github.com/rojasbadillamoi/DPI/issues</url>
+  <url type="vcs-browser">https://github.com/rojasbadillamoi/DPI</url>
+
+  <releases>
+    <release version="{VERSION}" date="{FECHA}"/>
+  </releases>
+
+  <!-- Sin contenido sensible. GNOME Software muestra un aviso si falta. -->
+  <content_rating type="oars-1.1"/>
+</component>
+""", encoding="utf-8")
+
 # ── 5. Metadatos del paquete ──────────────────────────────────────────────
 # matplotlib va en Depends y no en Recommends: sin él la descarga de figuras
 # —una función del programa, no un extra— queda inaccesible, y un paquete no
@@ -148,12 +241,13 @@ DEPENDS = ", ".join([
     " localizador del anio donde se rompe la datacion, control de calidad\n"
     " compatible con COFECHA y construccion de cronologias.\n"
     " .\n"
-    " Parte de la MoiCedrus Dendrochronological Suite.\n", encoding="utf-8")
+    " Parte de la MoiCedrus Dendrochronological Suite, desarrollada por\n"
+    " Moises E. Rojas-Badilla.\n", encoding="utf-8")
 
 (DOC / "copyright").write_text(
     "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n"
     f"Upstream-Name: {APP_NOMBRE}\n"
-    "Source: https://github.com/rojasbadillamoi/MoiCedrus\n\n"
+    "Source: https://github.com/rojasbadillamoi/DPI\n\n"
     "Files: *\n"
     "Copyright: 2026 Moises Rojas-Badilla\n"
     "License: GPL-3.0+\n", encoding="utf-8")
