@@ -54,7 +54,9 @@ la figura se vuelve a dibujar con matplotlib, así que la calidad no depende del
 tamaño de la ventana. Permite elegir paleta (Claro, Oscuro, Alto contraste,
 Sepia —las mismas de Veta—), formato (PNG, SVG, PDF), resolución y tamaño en
 centímetros. Se exporta lo que está visible: una serie oculta desde la leyenda
-no aparece. La carpeta y los ajustes se recuerdan entre sesiones.
+no aparece. La figura sale sin la cuadrícula de fondo, que ayuda a leer en
+pantalla pero estorba en una figura publicada. La carpeta y los ajustes se
+recuerdan entre sesiones.
 
 matplotlib se importa solo al exportar; si falta, el resto del programa
 funciona igual.
@@ -78,6 +80,31 @@ perfiles de especie, que corrían el mismo riesgo.
 Conviene saber cuál es el riesgo real, porque no es evidente: `np.float64` sí
 se serializa —es subclase de `float`—, pero `np.int64`, `np.float32`,
 `np.bool_`, `ndarray`, `Series` y `Timestamp` no.
+
+## 0.6 Los perfiles de especie se perdían en la versión instalada **[error]**
+
+Al guardar un perfil de especie, DPI lo escribía junto al programa. Corriendo
+desde el código fuente eso funciona, pero una vez instalado esa carpeta es de
+solo lectura, así que el guardado fallaba y el programa no avisaba: el perfil
+desaparecía al cerrar y había que calibrar la especie otra vez.
+
+Ahora hay dos archivos. Los perfiles que vienen con el programa quedan donde
+estaban, de solo lectura; los que crea cada usuario van a su carpeta de
+configuración —`%APPDATA%\moicedrus-dpi` en Windows,
+`~/.config/moicedrus-dpi` en Linux—, y al abrir se combinan, con los del
+usuario por encima. Si aun así el guardado falla, ahora avisa en pantalla en
+vez de callarse.
+
+## 0.7 Paquete `.deb` para Debian y Ubuntu **[nuevo]**
+
+Hasta ahora en Linux había que clonar el repositorio e instalar las
+dependencias a mano. El `.deb` se instala con doble clic, deja DPI en el menú
+de aplicaciones con su ícono y se desinstala como cualquier otro programa.
+
+Incluye metadatos AppStream, que son los que lee el Centro de Software de
+Ubuntu para mostrar licencia, sitio web y fecha de la última versión; sin ese
+archivo la ficha sale casi vacía, porque el Centro de Software no lee los
+datos del paquete Debian.
 
 ---
 
