@@ -21,9 +21,7 @@ abstract: >-
 authors:
   - family-names: "Rojas-Badilla"
     given-names: "Moisés E."
-    # Descomenta esta línea para que Zenodo vincule la publicación a tu perfil
-    # de autor. Hay que hacerlo también en .zenodo.json, que Zenodo lee primero.
-    # orcid: "https://orcid.org/0000-0002-1101-2280"
+    orcid: "https://orcid.org/0000-0002-1101-2280"
     affiliation: "Universidad de La Frontera, Temuco, Chile"
 
 version: "2.4.0"
