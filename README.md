@@ -5,8 +5,8 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/UI-PyQt6-green.svg)](https://riverbankcomputing.com/software/pyqt/)
-[![Versión](https://img.shields.io/badge/versión-2.3.0-orange.svg)](CHANGELOG.md)
-<!-- Tras publicar en Zenodo, pega aquí la insignia del DOI de concepto. -->
+[![Versión](https://img.shields.io/badge/versión-2.4.0-orange.svg)](CHANGELOG.md)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22780901.svg)](https://doi.org/10.5281/zenodo.22780901)
 
 ---
 
@@ -609,8 +609,9 @@ Todos los valores globales están centralizados en `constantes.py`. Modificar es
 | `TOLERANCIA_CLICK_PUNTO` | 15 px | Radio de selección de un punto existente (en píxeles de pantalla) |
 | `TOLERANCIA_CLICK_SEGMENTO` | 20 px | Radio para detectar un segmento al insertar un punto |
 | `VENTANA_COFECHADO_DEFECTO` | 40 años | Ventana deslizante de co-datación |
-| `OVERLAP_MINIMO_ANALISIS` | 20 años | Solapamiento mínimo para calcular r |
-| `OVERLAP_MINIMO_GRAFICO` | 10 años | Solapamiento mínimo en el motor split-window |
+| `OVERLAP_MINIMO_ANALISIS` | 10 años | Solapamiento mínimo para calcular r |
+| `OVERLAP_MINIMO_GRAFICO` | 5 años | Solapamiento mínimo en el motor split-window |
+| `OVERLAP_MINIMO_FLOTANTE` | 50 años | Solapamiento mínimo en series flotantes |
 | `RANGO_SHIFT_SIMULADOR` | ±5 años | Rango de búsqueda del simulador de anillos faltantes |
 | `UMBRAL_ANCLA_DEFECTO` | 0.40 | r mínimo para que un segmento se considere bien cofechado |
 | `UMBRAL_DESFASE_DEFECTO` | 0.25 | r máximo para que un segmento se marque como desfasado |
@@ -645,12 +646,14 @@ Si usas DPI en un trabajo publicado, por favor cítalo. El archivo
 `CITATION.cff` trae los datos en formato legible por máquina, y GitHub muestra
 el botón **Cite this repository** a partir de él.
 
-<!-- Tras publicar en Zenodo, reemplaza XXXXXXX por el DOI de CONCEPTO,
-     que es el que apunta siempre a la versión más reciente. -->
+El DOI de abajo es el **DOI de concepto**: apunta siempre a la versión más
+reciente, así que no hay que cambiarlo en cada publicación. Si necesitas citar
+una versión exacta, usa el DOI de esa versión, que Zenodo muestra en la página
+del registro.
 
 ```
-Rojas-Badilla, M.E. (2026). DPI — Dendro Pixel Interface (v2.3.0).
-Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX
+Rojas-Badilla, M.E. (2026). DPI — Dendro Pixel Interface.
+Zenodo. https://doi.org/10.5281/zenodo.22780901
 ```
 
 ### Sobre los métodos implementados
@@ -677,7 +680,7 @@ equivalencias numéricas. DPI no incorpora su código.
 
 ## Licencia
 
-Copyright © 2024 — Los autores de DPI
+Copyright © 2026 — Moisés E. Rojas-Badilla
 
 Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos de la **GNU General Public License** publicada por la Free Software Foundation, ya sea la versión 3 de la Licencia, o (a tu elección) cualquier versión posterior.
 

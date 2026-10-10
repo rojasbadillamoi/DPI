@@ -21,14 +21,18 @@ abstract: >-
 authors:
   - family-names: "Rojas-Badilla"
     given-names: "Moisés E."
-    # REVISAR: agrega tu ORCID si lo tienes. Zenodo lo usa para vincular el
-    # trabajo a tu perfil de autor, y vale la pena.
-    # orcid: "https://orcid.org/0000-0000-0000-0000"
-    # REVISAR: afiliación al momento de publicar
+    # Descomenta esta línea para que Zenodo vincule la publicación a tu perfil
+    # de autor. Hay que hacerlo también en .zenodo.json, que Zenodo lee primero.
+    # orcid: "https://orcid.org/0000-0002-1101-2280"
     affiliation: "Universidad de La Frontera, Temuco, Chile"
 
 version: "2.4.0"
 date-released: "2026-10-06"
+
+# DOI de concepto: apunta siempre a la versión más reciente en Zenodo. No hay
+# que cambiarlo al publicar una versión nueva; Zenodo genera además un DOI
+# propio para cada versión, derivado de este.
+doi: "10.5281/zenodo.22780901"
 
 license: GPL-3.0-or-later
 repository-code: "https://github.com/rojasbadillamoi/DPI"
