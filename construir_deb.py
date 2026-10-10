@@ -30,6 +30,10 @@ APP_ID = "moicedrus-dpi"
 # el nombre visible y completo va en el campo Description y en el menú.
 PAQUETE = "dendro-pixel-interface-dpi"
 
+# Contacto de soporte del paquete: va en el campo Maintainer, que es la
+# dirección a la que escribe quien encuentra un problema de empaquetado.
+MANTENEDOR = "Moisés E. Rojas-Badilla <moisese.rojasbadilla@gmail.com>"
+
 sys.path.insert(0, str(ORIGEN))
 from constantes import VERSION, APP_NOMBRE  # noqa
 
@@ -229,7 +233,7 @@ DEPENDS = ", ".join([
     "Priority: optional\n"
     "Architecture: all\n"
     f"Depends: {DEPENDS}\n"
-    "Maintainer: Moisés Rojas-Badilla <rjsw@st-andrews.ac.uk>\n"
+    f"Maintainer: {MANTENEDOR}\n"
     "Homepage: https://rojasbadillamoi.github.io/\n"
     f"Description: {APP_NOMBRE} (DPI) - medicion de anillos y co-datacion\n"
     " Programa de escritorio para medir el ancho de los anillos de\n"
