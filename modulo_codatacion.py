@@ -2040,39 +2040,68 @@ def detrendar_para_cronologia(serie_mm: pd.Series,
     return idx
 
 
-def orden_ar_agrupado(indices: dict, pmax: int = 10) -> tuple:
-    """Orden autorregresivo AGRUPADO, al modo de ARSTAN.
+def orden_ar_agrupado(indices: dict, pmax: int | None = None) -> tuple:
+    """Orden autorregresivo AGRUPADO: uno solo para toda la colección.
 
-    ARSTAN no elige un orden por serie: calcula las autocorrelaciones de toda
-    la colección juntas, ajusta Yule-Walker sobre ellas, elige el orden por el
-    PRIMER MÍNIMO del AIC y aplica ese mismo orden a todas las series. Su
-    archivo de opciones lo dice como «series ar order 0 — pooled ar order fit
-    to all series».
+    Es lo que hace ARSTAN —«series ar order 0, pooled ar order fit to all
+    series»—: en vez de elegir un orden por serie, promedia las
+    autocorrelaciones de la colección y ajusta sobre ellas. Agrupar mejora el
+    ESTIMADOR de la autocorrelación, que es lo que aporta.
 
-    DPI elegía un orden por serie con BIC, que es defendible pero da otra
-    cosa. Verificado contra dos corridas reales: el orden agrupado sale 2 en
-    ambas colecciones, igual que ARSTAN, y la cronología residual se acerca:
+    Lo que NO cambia al agrupar es el criterio ni el tamaño de muestra, y por
+    ahí se rompía. Esta función elegía el orden por el primer mínimo local del
+    AIC con `n` igual a la SUMA de los largos de todas las series, y eso falla
+    de dos maneras:
 
-                                    COS9      COD9
-        orden por serie (BIC)      0.9837    0.9696
-        orden agrupado (ARSTAN)    0.9892    0.9736
+    **El criterio ya estaba medido y descartado.** El primer mínimo local del
+    AIC es el de `chron.ars` de dplR, y contra los órdenes que informa COFECHA
+    —un entero, así que no admite interpretación— acierta 81 % frente al 92 %
+    del BIC, que es el que usa `_seleccionar_orden_ar`. Está en el registro de
+    cambios 1.3. La función agrupada se quedó sin ese arreglo.
 
-    El primer mínimo del AIC, y no el mínimo global, es deliberado en ARSTAN:
-    su propio informe advierte que conviene revisar la traza del AIC porque los
-    dos criterios pueden diferir.
+    **La suma de los largos no es el tamaño de muestra.** El modelo se aplica
+    a series individuales, así que el orden tiene que ser el que se justifica
+    para una serie del largo típico. Con `ntot` la penalización queda en torno
+    a 1e-4 de `log(var)` —nula—, la traza del AIC sale monótona decreciente, el
+    primer mínimo no se dispara nunca y el respaldo `argmin` devuelve el techo.
+    Resultado: el orden lo decidía el TAMAÑO DE LA COLECCIÓN y no la
+    persistencia de los datos. Medido sobre seis colecciones con ρ₁ entre 0,31
+    y 0,36, salía 1 con 19 a 43 series y 10 con 70 a 82.
+
+    Y lo que se modelaba pasado el retardo 1 era un artefacto: las
+    autocorrelaciones parciales agrupadas son negativas y sin decaer del
+    retardo 3 al 10 en las seis colecciones, que es la firma del spline, no de
+    un proceso autorregresivo. Contra el piso de ruido de una serie individual
+    quedan por debajo del ruido; agrupar las hacía parecer significativas.
+
+    Con BIC sobre el largo mediano y el techo de `ORDEN_AR_MAXIMO`, el orden
+    sale AR(1) en las seis, que es la moda de los órdenes por serie en todas.
+    La cronología residual correlaciona 0,96 con la anterior, pero recupera
+    señal: la desviación estándar sube un 8 % y el Rbar entre series también
+    —0,407 a 0,448 en la colección de 82—, o sea que el AR(10) estaba quitando
+    señal COMÚN, que es lo contrario de lo que busca una cronología residual.
+
+    Nota sobre cómo se detectó: con series AR sintéticas la regla anterior
+    acierta, porque ahí las parciales pasado el orden verdadero son ruido
+    blanco y la traza del AIC sí da la vuelta. Degenera solo con la cola de
+    parciales negativas que deja el detrending, así que hacen falta
+    colecciones reales para verlo.
 
     Devuelve (orden, autocorrelaciones_agrupadas).
     """
+    if pmax is None:
+        pmax = ORDEN_AR_MAXIMO
+    pmax = max(int(pmax), 1)
     num = np.zeros(pmax)
     den = np.zeros(pmax)
-    ntot = 0
+    largos = []
     for v in indices.values():
         x = pd.to_numeric(v, errors="coerce").dropna().to_numpy(dtype=float)
         if len(x) < 20:
             continue
         x = x - x.mean()
         n = len(x)
-        ntot += n
+        largos.append(n)
         c0 = float(np.sum(x * x))
         if c0 <= 0:
             continue
@@ -2081,29 +2110,29 @@ def orden_ar_agrupado(indices: dict, pmax: int = 10) -> tuple:
                 continue
             num[k - 1] += n * (float(np.sum(x[:-k] * x[k:])) / c0)
             den[k - 1] += n
-    if ntot == 0:
+    if not largos:
         return 1, np.zeros(pmax)
     rho = num / np.maximum(den, 1e-12)
 
-    aic = []
-    for p in range(0, pmax + 1):
-        if p == 0:
-            var = 1.0
-        else:
-            R = np.array([[1.0 if i == j else rho[abs(i - j) - 1]
-                           for j in range(p)] for i in range(p)])
-            r = rho[:p]
-            try:
-                phi = np.linalg.solve(R, r)
-            except Exception:
-                aic.append(np.inf)
-                continue
-            var = 1.0 - float(np.dot(phi, r))
-        aic.append(ntot * np.log(max(var, 1e-12)) + 2 * p)
-    for p in range(1, len(aic) - 1):
-        if aic[p] <= aic[p - 1] and aic[p] <= aic[p + 1]:
-            return p, rho
-    return max(int(np.argmin(aic)), 1), rho
+    # Largo MEDIANO, no la suma: es el tamaño de la serie a la que se le va a
+    # aplicar el modelo. La mediana y no la media, por las series cortas.
+    n = int(np.median(largos))
+    mejor_orden, mejor_pun = 1, np.inf
+    for p in range(1, pmax + 1):
+        R = np.array([[1.0 if i == j else rho[abs(i - j) - 1]
+                       for j in range(p)] for i in range(p)])
+        r = rho[:p]
+        try:
+            phi = np.linalg.solve(R, r)
+        except Exception:
+            continue
+        var = 1.0 - float(np.dot(phi, r))
+        if not np.isfinite(var) or var <= 0:
+            continue
+        pun = n * np.log(var) + p * np.log(n)      # BIC, igual que por serie
+        if pun < mejor_pun - 1e-9:
+            mejor_pun, mejor_orden = pun, p
+    return mejor_orden, rho
 
 
 def _normalizar_serie_para_tipo(serie_mm: pd.Series, tipo_cronologia: str,

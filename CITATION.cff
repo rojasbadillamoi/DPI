@@ -24,8 +24,8 @@ authors:
     orcid: "https://orcid.org/0000-0002-1101-2280"
     affiliation: "Universidad de La Frontera, Temuco, Chile"
 
-version: "2.4.0"
-date-released: "2026-10-06"
+version: "2.4.1"
+date-released: "2026-10-10"
 
 # DOI de concepto: apunta siempre a la versión más reciente en Zenodo. No hay
 # que cambiarlo al publicar una versión nueva; Zenodo genera además un DOI

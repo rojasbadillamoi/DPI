@@ -97,7 +97,7 @@ import sys as _sys
 APP_NOMBRE = "Dendro Pixel Interface"
 APP_SIGLA = "DPI"
 APP_SUITE = "MoiCedrus Dendrochronological Suite"
-VERSION = "2.4.0"
+VERSION = "2.4.1"
 
 # Nombres y ubicaciones posibles del ícono. Se prueban en orden porque el
 # archivo vive en la raíz al correr desde el código fuente, y dentro de

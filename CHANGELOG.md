@@ -1,12 +1,93 @@
 # DPI — Registro de cambios
 
-**Dendro Pixel Interface 2.4.0 · Suite MoiCedrus**
-Desde la versión 2.0.0 hasta la 2.4.0
+**Dendro Pixel Interface 2.4.1 · Suite MoiCedrus**
+Desde la versión 2.0.0 hasta la 2.4.1
 
 Cada cambio dice qué se hizo y, cuando corresponde, con qué evidencia se
 decidió. Los que corrigen un error real de DPI van marcados con **[error]**;
 los que acercan el programa a COFECHA, con **[fidelidad]**; los que agregan
 capacidad, con **[nuevo]**.
+
+---
+
+# 0. Versión 2.4.1 — el orden del AR agrupado
+
+Una sola corrección, pero cambia las cronologías residuales de las colecciones
+grandes. **Si generaste cronologías residuales con 2.4.0 o anterior desde una
+colección de más de ~50 series, conviene regenerarlas.**
+
+## 0.0 El orden del AR agrupado lo decidía el tamaño de la colección **[error]**
+
+`orden_ar_agrupado` elegía el orden por el **primer mínimo local del AIC** con
+`n` igual a la **suma** de los largos de todas las series. Los dos detalles
+están mal, y se refuerzan.
+
+El criterio ya estaba medido y descartado en esta misma lista: el primer mínimo
+local del AIC es el de `chron.ars` de dplR y acierta 81 % contra los órdenes
+que informa COFECHA, frente al 92 % del BIC (§1.3, y la tabla de ideas
+descartadas de la sección 8). La función agrupada se quedó sin ese arreglo.
+
+Y la suma de los largos no es el tamaño de muestra. El modelo se aplica a
+series individuales, así que el orden tiene que ser el que se justifica para
+una serie del largo típico. Con `ntot` la penalización del AIC queda en torno a
+1×10⁻⁴ de `log(var)` —es decir, nula—, la traza sale monótona decreciente, el
+primer mínimo nunca se dispara y el respaldo `argmin` devuelve el techo
+`pmax = 10`. Medido sobre seis colecciones con ρ₁ entre 0,31 y 0,36:
+
+| colección | series | ntot | orden antes | orden ahora |
+|---|---|---|---|---|
+| COS9 | 19 | 2.186 | 1 | 1 |
+| COD9 | 24 | 2.541 | 1 | 1 |
+| cos9 (Lenga Congui) | 43 | 4.727 | 1 | 1 |
+| ACH | 40 | 7.785 | 10 | 1 |
+| CCI11 | 82 | 14.285 | 10 | 1 |
+| SGB | 70 | 20.193 | 10 | 1 |
+
+El orden dependía de cuántas series tenía la colección, no de la persistencia
+de los datos. Y lo que se modelaba pasado el retardo 1 era un artefacto: las
+autocorrelaciones parciales agrupadas salen negativas y sin decaer del retardo
+3 al 10 en las seis colecciones, que es la firma de un filtro pasa-altos —el
+spline— y no de un proceso autorregresivo. Contra el piso de ruido de una serie
+individual quedan por debajo del ruido; agrupar las hacía parecer
+significativas.
+
+Ahora el orden se elige por **BIC sobre el largo mediano de las series**, el
+mismo criterio de `_seleccionar_orden_ar`, con techo en `ORDEN_AR_MAXIMO`.
+Sale AR(1) en las seis colecciones, que es la moda de los órdenes por serie en
+todas. Sobre datos sintéticos AR(2) elige 2, y de 5 a 200 series del mismo
+conjunto no se mueve.
+
+Lo que gana la cronología, en las tres colecciones que cambian:
+
+| colección | r con la anterior | sd residual | Rbar entre series |
+|---|---|---|---|
+| SGB | 0,959 | 0,1705 → 0,1849 | 0,358 → 0,376 |
+| ACH | 0,969 | 0,1606 → 0,1730 | 0,332 → 0,345 |
+| CCI11 | 0,963 | 0,1906 → 0,2081 | 0,407 → 0,448 |
+
+El Rbar **sube**, y ese es el argumento decisivo: el Rbar mide la señal común.
+Si quitar el blanqueo de más la aumenta, entonces el AR(10) estaba removiendo
+señal compartida —climática— y no persistencia individual, que es lo único que
+una cronología residual quiere sacar.
+
+Lo que **no** cambia, y conviene decirlo para no prometer de más: el período
+útil de la cronología. Medida la EPS en ventanas móviles de 50 años, el primer
+año que cruza 0,85 es el mismo antes y después en las tres colecciones —1156 en
+SGB, 1495 en CCI11, 1830 en ACH—, porque a esas profundidades la EPS está
+saturada y un Rbar algo mayor no alcanza a correr el umbral. El número de
+ventanas sobre el umbral sube apenas, de 149 a 151 y de 96 a 97 sobre 164 y 100.
+
+Tampoco cambia nada del control de calidad del fechado: `orden_ar_agrupado`
+solo se usa al construir cronologías, y los módulos de COFECHA eligen el orden
+por serie. Las correlaciones de co-datación y el informe de siete partes son
+idénticos.
+
+Una nota sobre cómo se detectó, porque explica por qué sobrevivió tanto: con
+series AR sintéticas la regla anterior **acierta**, porque ahí las parciales
+pasado el orden verdadero son ruido blanco y la traza del AIC sí da la vuelta.
+Degenera solo con la cola de parciales que deja el detrending, de modo que
+hacen falta colecciones reales para verlo. Apareció al verificar que DendroLen
+y DPI entregaran la misma cronología.
 
 ---
 
