@@ -8,6 +8,10 @@
 [![Versión](https://img.shields.io/badge/versión-2.4.1-orange.svg)](CHANGELOG.md)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22780901.svg)](https://doi.org/10.5281/zenodo.22780901)
 
+> 📖 **¿Vienes a usarlo, no a leer la ficha técnica?** Parte por el
+> **[Manual](MANUAL.md)**: el paso a paso con capturas, de la imagen a la serie
+> cofechada. Este README es la referencia completa.
+
 ---
 
 ## Índice
