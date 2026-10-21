@@ -342,18 +342,50 @@ botón de cancelar.
 
 ## 9. Cronología
 
-Construye `raw`, `standard` y `residual`, con cinco métodos de estandarización
-y tres de agregación.
+Seleccionas las series de la izquierda, eliges tipo, estandarización y
+agregación, y `⚙ Generar cronología`. Salen las tres curvas —raw, standard,
+residual— y la EPS móvil sobre el mismo gráfico.
 
-Dos cosas que conviene saber antes de leer los estadísticos:
+![Pestaña Cronología con una cronología de 1239 años](manual/10-cronologia-qlh.png)
 
-- **El Rbar es entre árboles.** Dos radios del mismo árbol comparten el
-  individuo, no solo el sitio. Contarlos como réplica independiente infla el
-  Rbar, la EPS y la SSS. DPI separa las series por árbol y calcula el Rbar
-  efectivo.
-- **Mira la SSS, no solo la EPS.** La EPS te compara contra una población
-  infinita de árboles; la SSS, contra la colección que realmente tienes. Para
-  decidir desde qué año usar la cronología, la segunda es la pregunta correcta.
+El panel de **Información / metadatos**, a la derecha, es la parte que hay que
+aprender a leer. Ahí están las dos cosas que suelen darse por sabidas y casi
+nunca se miran:
+
+### El Rbar está separado por árbol
+
+Dos radios del mismo árbol comparten el individuo, no solo el sitio. Contarlos
+como réplica independiente infla el Rbar, la EPS y la SSS. Por eso DPI informa
+tres números y no uno:
+
+| | QLH, 69 series de 46 árboles | COS, 43 series de 29 árboles |
+|---|---|---|
+| entre radios del mismo árbol | 0,815 | 0,580 |
+| **entre árboles** | **0,430** | **0,230** |
+| efectivo | 0,450 | 0,256 |
+
+El del medio es el honesto. El primero mide cuánto se parece un árbol a sí
+mismo, que siempre es mucho, y es el que infla todo lo demás si lo usas sin
+pensar.
+
+### La EPS y la SSS no dan la misma respuesta
+
+![La misma pestaña con una colección más corta](manual/11-cronologia-cos.png)
+
+La EPS compara tu cronología contra una población infinita de árboles; la SSS,
+contra la colección que realmente tienes. Y no se ordenan igual:
+
+| | EPS ≥ 0,85 desde | SSS ≥ 0,85 desde |
+|---|---|---|
+| **QLH** (773–2011) | 798 | **1067** |
+| **COS** (1807–2024) | 1932 | **1908** |
+
+En QLH son 269 años de diferencia, y en direcciones contrarias entre las dos
+colecciones. No puedes sustituir una por la otra. **Para decidir desde qué año
+usar tu cronología, la SSS es la pregunta correcta**, porque pregunta por la
+colección que tienes en la mano.
+
+### Curvas de ajuste negativas
 
 Si una curva de ajuste cruza cero o se le acerca, el índice se dispara. DPI
 descarta la curva completa —como ARSTAN y dplR— y abre un diálogo con las cinco
