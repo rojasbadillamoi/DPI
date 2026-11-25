@@ -1,7 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
+from pathlib import Path
 
-datas = [('species_profiles.json', '.'), ('iconos\\dpi.ico', 'iconos')]
+icono = str(Path('iconos') / 'dpi.ico')
+
+datas = [('species_profiles.json', '.'), (icono, 'iconos')]
 binaries = []
 hiddenimports = ['PyQt6.QtPrintSupport', 'pyqtgraph.graphicsItems.ViewBox.axisCtrlTemplate_pyqt6', 'pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt6', 'pyqtgraph.imageview.ImageViewTemplate_pyqt6', 'pandas._libs.tslibs.np_datetime', 'pandas._libs.tslibs.nattype', 'pandas._libs.tslibs.timedeltas', 'scipy.special._cython_special']
 # Backends de matplotlib para la descarga de gráficos. Solo `backend_agg`
@@ -18,7 +21,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['main_anillos.py'],
+    ['run_dpi.py'],
     pathex=[],
     binaries=binaries,
     datas=datas,
@@ -48,7 +51,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['iconos\\dpi.ico'],
+    icon=[icono],
 )
 coll = COLLECT(
     exe,

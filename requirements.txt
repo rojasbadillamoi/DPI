@@ -6,6 +6,8 @@ numpy>=1.24
 pandas>=2.0
 scipy>=1.10
 openpyxl>=3.1
+odfpy>=1.4
+xlrd>=2.0
 opencv-python-headless>=4.7
 Pillow
 # Solo para DESCARGAR gráficos (cronologías y series). Se importa recién al

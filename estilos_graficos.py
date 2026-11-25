@@ -23,6 +23,7 @@ abrir DPI no paga ese costo.
 """
 
 from __future__ import annotations
+from dpi.ui.configuracion import ajustes_ui
 
 # Nombre de paleta ↔ colores. `mapa` es el colormap para gráficos coloreados
 # por valor; `series` es el ciclo de colores cuando se dibuja más de una curva.
@@ -306,7 +307,7 @@ _CLAVE = "graficos"
 
 def _ajustes():
     from PyQt6.QtCore import QSettings
-    return QSettings("MoiCedrus", "DPI")
+    return ajustes_ui()
 
 
 def _carpeta_recordada() -> str:

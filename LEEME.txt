@@ -34,13 +34,13 @@
   │ modulo_codatacion.py       │ Panel de co-datación visual, lectura de     │
   │                            │ archivos .rwl / .wid, motor de búsqueda     │
   │                            │ exhaustiva de correcciones                  │
-  │ modulo_autodeteccion.py    │ Detección automática de límites de anillo   │
+  │ dpi/medicion/autodeteccion.py│ Detección automática de límites de anillo   │
   │                            │ por análisis de perfil de intensidad        │
   │ modulo_eventos.py          │ Análisis estadístico y gráfico de datasets  │
   │                            │ de eventos (frost rings, light rings, etc.) │
   │ modulo_ingreso.py          │ Ingreso manual y edición de eventos         │
   │                            │ por serie; importación de planillas Excel   │
-  │ constantes.py              │ Valores globales: DPI, tolerancias,         │
+  │ dpi/                       │ Valores por paquete: DPI, tolerancias,         │
   │                            │ colores, tipos de anomalía y más            │
   │ estilos.py                 │ Hojas de estilo Qt para tema claro/oscuro   │
   │ species_profiles.json      │ Perfiles de detección por especie vegetal   │

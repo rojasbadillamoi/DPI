@@ -12,6 +12,7 @@ lo que da correlaciones comparables con las suyas.
 """
 
 from __future__ import annotations
+from dpi.ui.configuracion import ajustes_ui
 
 import os
 
@@ -27,13 +28,13 @@ from PyQt6.QtWidgets import (
     QApplication, QAbstractItemView, QProgressBar,
 )
 
-import modulo_cofecha as _cof
+import dpi.ciencia.cofecha as _cof
 import modulo_cofecha_salida as _sal
 from estilos import SECUNDARIO_QSS, color_secundario
-from modulo_codatacion import (
-    leer_tucson_multi, leer_tabular, leer_columna_multi_hojas,
-    RIGIDEZ_SPLINE_DEFECTO, _es_planilla,
-)
+from dpi.formatos.tucson import leer_tucson_multi
+from dpi.formatos.tabular import leer_tabular, leer_columna_multi_hojas
+from dpi.formatos.planillas import es_planilla
+from dpi.ciencia.cronologia import RIGIDEZ_SPLINE_DEFECTO
 
 
 class _HiloAnalisis(QThread):
@@ -300,7 +301,7 @@ class PestanaCofecha(QWidget):
     # Memoria de la última carpeta usada
     # ------------------------------------------------------------------
     def _ajustes(self) -> QSettings:
-        return QSettings("MoiCedrus", "DPI")
+        return ajustes_ui()
 
     def _ultima_carpeta(self, clave: str = "cofecha/carpeta") -> str:
         ruta = self._ajustes().value(clave, "", type=str)
@@ -363,7 +364,7 @@ class PestanaCofecha(QWidget):
                 pass
 
         # Planillas y tabulares con varias columnas
-        if _es_planilla(ext) or ext in (".csv", ".tsv"):
+        if es_planilla(ext) or ext in (".csv", ".tsv"):
             try:
                 hojas = leer_columna_multi_hojas(ruta)
                 n = 0

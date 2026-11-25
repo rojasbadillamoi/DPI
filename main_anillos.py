@@ -7,6 +7,7 @@ Pestañas:
   🧭 Cronología           — generación de cronologías a partir de series .rwl
   📊 Co-Datación          — cofechado estadístico de series contra cronología
 """
+from dpi.ui.configuracion import ajustes_ui
 
 import sys
 import os
@@ -19,12 +20,12 @@ from PyQt6.QtWidgets import (
     QPushButton, QFileDialog, QLabel, QLineEdit,
     QSpinBox, QComboBox, QCheckBox,
 )
-from PyQt6.QtGui import QIcon
 
-from constantes import (
-    APP_NOMBRE, APP_SIGLA, VERSION, icono_app, ruta_icono)
+from dpi.version import APP_NOMBRE, APP_SIGLA, VERSION
+from dpi.ui.recursos import icono_app, ruta_icono
 from estilos import aplicar_tema, tema_del_sistema
-from modulo_medicion import PestanaImagen, ExportadorDendro
+from modulo_medicion import PestanaImagen
+from modulo_exportacion_medicion_ui import ExportadorDendro
 from modulo_codatacion import (
     PanelCodatacion, VentanaCronologia, VentanaSkeletonPlot)
 from modulo_unir import DialogoUnirRwl
@@ -45,7 +46,7 @@ class VentanaAnillos(QMainWindow):
             self.setWindowIcon(icono_app())
         self.setGeometry(100, 100, 1400, 800)
         # Restaurar tema guardado (o detectar tema del sistema)
-        _cfg = QSettings("MoiCedrus", "DendroAnillos")
+        _cfg = ajustes_ui(ventana_principal=True)
         _saved = _cfg.value("tema_oscuro", None)
         if _saved is None:
             # Primera ejecución: arrancar con el tema del escritorio.
@@ -208,7 +209,9 @@ class VentanaAnillos(QMainWindow):
         # La generación de cronologías es una tarea distinta de la
         # co-datación, así que vive en su propia pestaña. Le pasamos el panel
         # de co-datación como destino de la cronología activa.
-        self._tab_cronologia = VentanaCronologia(self._tab_codatacion, parent=self)
+        self._tab_cronologia = VentanaCronologia(self._tab_codatacion.set_cronologia_activa, parent=self)
+        self._tab_codatacion.conectar_fuente_cronologia(
+            self._tab_cronologia.series_para_nulo, self.ir_a_pestana_cronologia)
         self._tabs.addTab(self._tab_cronologia, "🧭 Cronología")
 
         self._tabs.addTab(self._tab_codatacion, "📊 Co-Datación")
@@ -216,7 +219,10 @@ class VentanaAnillos(QMainWindow):
         # ── Pestaña Skeleton (cofechado visual) ───────────────────────────
         # Banco de trabajo de cofechado con su propio selector de series.
         # Puede importar/enviar series desde/hacia Co-Datación.
-        self._tab_skeleton = VentanaSkeletonPlot(self._tab_codatacion, parent=self)
+        self._tab_skeleton = VentanaSkeletonPlot(parent=self,
+            obtener_series=lambda: self._tab_codatacion.series_datos,
+            agregar_serie=self._tab_codatacion.agregar_serie_externa,
+            reemplazar_serie=self._tab_codatacion.reemplazar_serie)
         self._tabs.addTab(self._tab_skeleton, "🦴 Skeleton")
 
         # ── Pestaña COFECHA (control de calidad de la colección) ──────────
@@ -241,7 +247,7 @@ class VentanaAnillos(QMainWindow):
         """Guarda el orden actual de las pestañas (por su texto) para
         restaurarlo la próxima vez que se abra el programa."""
         orden = [self._tabs.tabText(i) for i in range(self._tabs.count())]
-        QSettings("MoiCedrus", "DendroAnillos").setValue(
+        ajustes_ui(ventana_principal=True).setValue(
             "orden_pestanas", orden)
 
     def _restaurar_orden_pestanas(self):
@@ -255,7 +261,7 @@ class VentanaAnillos(QMainWindow):
         currentChanged del propio QTabWidget para evitar parpadeos durante el
         reordenamiento, sin afectar la sincronización etiqueta↔contenido.
         """
-        guardado = QSettings("MoiCedrus", "DendroAnillos").value(
+        guardado = ajustes_ui(ventana_principal=True).value(
             "orden_pestanas")
         if not guardado:
             return
@@ -304,11 +310,27 @@ class VentanaAnillos(QMainWindow):
     def _alternar_tema(self):
         self._modo_oscuro = not self._modo_oscuro
         self._aplicar_estilo()
-        QSettings("MoiCedrus", "DendroAnillos").setValue(
+        ajustes_ui(ventana_principal=True).setValue(
             "tema_oscuro", str(self._modo_oscuro).lower())
 
     def closeEvent(self, event):
-        cfg = QSettings("MoiCedrus", "DendroAnillos")
+        if any(self._tareas_medicion_en_curso(self._tabs_imagenes.widget(i))
+               for i in range(self._tabs_imagenes.count())):
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Tareas en curso", "Cancele o espere a que terminen las tareas de medición antes de cerrar.")
+            event.ignore()
+            return
+        for i in range(self._tabs_imagenes.count()):
+            widget = self._tabs_imagenes.widget(i)
+            if widget is not None and not widget.guardar_pendiente():
+                from PyQt6.QtWidgets import QMessageBox
+                if QMessageBox.question(self, "Guardado pendiente",
+                    "No se pudo guardar una sesión. ¿Cerrar sin guardar?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                    event.ignore()
+                    return
+        cfg = ajustes_ui(ventana_principal=True)
         cfg.setValue("tema_oscuro", str(self._modo_oscuro).lower())
         # Recordar tamaño/posición y si quedó maximizada, para reabrir la
         # ventana como el usuario la dejó (antes siempre volvía a 1400x800).
@@ -319,7 +341,7 @@ class VentanaAnillos(QMainWindow):
 
     def _restaurar_geometria(self):
         """Restaura tamaño/posición y estado maximizado de la sesión previa."""
-        cfg = QSettings("MoiCedrus", "DendroAnillos")
+        cfg = ajustes_ui(ventana_principal=True)
         geo = cfg.value("ventana_geometria")
         if geo is not None:
             try:
@@ -402,7 +424,7 @@ class VentanaAnillos(QMainWindow):
     # ── Imágenes ──────────────────────────────────────────────────────────
 
     def _abrir_imagenes(self):
-        cfg = QSettings("MoiCedrus", "DendroAnillos")
+        cfg = ajustes_ui(ventana_principal=True)
         ultima_carpeta = cfg.value("ultima_carpeta", "")
         rutas, _ = QFileDialog.getOpenFileNames(
             self, "Seleccionar imagen(es)", ultima_carpeta,
@@ -451,8 +473,23 @@ class VentanaAnillos(QMainWindow):
             from PyQt6.QtCore import QTimer
             QTimer.singleShot(20, self._abrir_siguiente_imagen)
 
+    @staticmethod
+    def _tareas_medicion_en_curso(widget):
+        return widget is not None and widget.tareas_medicion_en_curso()
+
     def _cerrar_pestana(self, index: int):
         widget = self._tabs_imagenes.widget(index)
+        if self._tareas_medicion_en_curso(widget):
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Tareas en curso", "Cancele o espere a que termine la tarea antes de cerrar la pestaña.")
+            return
+        if widget is not None and not widget.guardar_pendiente():
+            from PyQt6.QtWidgets import QMessageBox
+            if QMessageBox.question(self, "Guardado pendiente",
+                "No se pudo guardar la sesión. ¿Cerrar sin guardar?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                return
         # Si esta era la pestaña ACTIVA cuyos widgets estaban en el top bar,
         # sacarlos antes de borrar la pestaña para evitar que el layout
         # quede con referencias a widgets que se van a destruir.
@@ -508,6 +545,7 @@ class VentanaAnillos(QMainWindow):
         p = self._pestana_activa()
         if p:
             p.check_tiene_medula.setChecked(bool(state))
+            p._guardar_estado()
             p._guardar_sidecar_anom()
 
     def _sync_check_corteza(self, state):
@@ -515,6 +553,7 @@ class VentanaAnillos(QMainWindow):
         p = self._pestana_activa()
         if p:
             p.check_tiene_corteza.setChecked(bool(state))
+            p._guardar_estado()
             p._guardar_sidecar_anom()
 
     def _al_cambiar_pestana(self, _idx):
@@ -603,21 +642,17 @@ def _instalar_traduccion_espanol(app: QApplication) -> None:
             app._traducciones_qt.append(tr)
 
 
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
-    app = QApplication(sys.argv)
+def configurar_aplicacion(app):
+    """Configuración común para arranque directo y lanzador con splash."""
     app.setApplicationName(APP_SIGLA)
     app.setApplicationDisplayName(APP_NOMBRE)
     app.setApplicationVersion(VERSION)
     if ruta_icono():
         app.setWindowIcon(icono_app())
-    # Identificador de escritorio. En Wayland el compositor no puede leer el
-    # ícono desde la ventana como hacía X11: busca un archivo .desktop cuyo
-    # nombre coincida con este identificador y saca el ícono de ahí. Sin esta
-    # línea el ícono sale en la ventana pero no en el dock.
     app.setDesktopFileName("moicedrus-dpi")
     _instalar_traduccion_espanol(app)
-    ventana = VentanaAnillos()
-    ventana.show()
-    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    from run_dpi import ejecutar
+    sys.exit(ejecutar())

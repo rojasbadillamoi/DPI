@@ -580,17 +580,17 @@ Diccionario JSON ubicado en el directorio del ejecutable. Ejemplo de entrada:
 ├── main_anillos.py             # Ventana principal
 ├── modulo_medicion.py          # Visor interactivo, exportador, medición
 ├── modulo_codatacion.py        # Co-datación, skeleton, cronologías, spline
-├── modulo_quiebres.py          # Localizador del año del quiebre
-├── modulo_cofecha.py           # Motor del control de calidad
-├── modulo_cofecha_nucleo.py    # Álgebra vectorizada del motor
+├── dpi/ciencia/quiebres.py          # Localizador del año del quiebre
+├── dpi/ciencia/cofecha.py           # Motor del control de calidad
+├── dpi/ciencia/cofecha_nucleo.py    # Álgebra vectorizada del motor
 ├── modulo_cofecha_salida.py    # Formato del informe de siete partes
 ├── modulo_cofecha_ui.py        # Pestaña de control de calidad
-├── modulo_transformacion.py    # Transformaciones comunes de correlación
+├── dpi/ciencia/transformacion.py    # Transformaciones comunes de correlación
 ├── modulo_unir.py              # Unión y ordenamiento de archivos
-├── modulo_autodeteccion.py     # Detección automática de límites
+├── dpi/medicion/autodeteccion.py # Detección automática de límites
 ├── modulo_intensidad.py        # Blue/Red/Green Intensity
 ├── modulo_pith.py              # Estimación de médula faltante
-├── constantes.py               # Configuración global centralizada
+├── dpi/                        # Núcleos, formatos, infraestructura e interfaz
 ├── estilos.py                  # Hojas de estilo Qt
 ├── instalar_lanzador_linux.py  # Lanzador de escritorio para Linux
 ├── species_profiles.json       # Perfiles de especie
@@ -604,7 +604,7 @@ Diccionario JSON ubicado en el directorio del ejecutable. Ejemplo de entrada:
 
 ## Configuración
 
-Todos los valores globales están centralizados en `constantes.py`. Modificar este archivo permite ajustar el comportamiento del programa sin tocar el código de los módulos.
+Las constantes se agrupan por responsabilidad en `dpi/medicion/constantes.py`, `dpi/ui/medicion/constantes.py`, `dpi/ciencia/constantes.py`, `dpi/formatos/constantes.py` y `dpi/ui/colores.py`. Consulta `ARQUITECTURA.md` para la organización del código.
 
 | Constante | Valor por defecto | Descripción |
 |---|---|---|

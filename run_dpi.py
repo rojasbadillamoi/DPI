@@ -12,15 +12,9 @@ Uso:  python run_dpi.py
 import sys
 import os
 import logging
+from pathlib import Path
 
-logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-
-def _ruta_recurso(nombre: str) -> str:
-    if getattr(sys, '_MEIPASS', None):
-        return os.path.join(sys._MEIPASS, nombre)
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), nombre)
 
 
 def crear_splash(app):
@@ -35,7 +29,8 @@ def crear_splash(app):
     p.fillRect(0, 0, W, H, QColor("#2b2b2b"))
 
     # Ícono centrado (200px), tomando la mayor resolución interna del .ico
-    from constantes import APP_NOMBRE, APP_SUITE, VERSION, pixmap_icono
+    from dpi.version import APP_NOMBRE, APP_SUITE, VERSION
+    from dpi.ui.recursos import pixmap_icono
     s = pixmap_icono(200)
     if not s.isNull():
         p.drawPixmap((W - s.width()) // 2, 25, s)
@@ -77,7 +72,7 @@ def main():
     from PyQt6.QtWidgets import QApplication
     from PyQt6.QtGui import QIcon
 
-    from constantes import icono_app, ruta_icono
+    from dpi.ui.recursos import icono_app, ruta_icono
     app = QApplication(sys.argv)
     if ruta_icono():
         app.setWindowIcon(icono_app())
@@ -96,27 +91,43 @@ def main():
     import pyqtgraph  # noqa
 
     splash_msg(splash, "Cargando interfaz de medición...")
-    from modulo_medicion import PestanaImagen, ExportadorDendro  # noqa
+    from modulo_medicion import PestanaImagen  # noqa
+    from modulo_exportacion_medicion_ui import ExportadorDendro  # noqa
 
     splash_msg(splash, "Cargando co-datación...")
     from modulo_codatacion import PanelCodatacion  # noqa
 
     splash_msg(splash, "Preparando ventana principal...")
-    from main_anillos import VentanaAnillos
+    from main_anillos import VentanaAnillos, configurar_aplicacion
+    configurar_aplicacion(app)
     ventana = VentanaAnillos()
     ventana.show()
     splash.finish(ventana)
-    sys.exit(app.exec())
+    return app.exec()
+
+
+def _ruta_registro_error():
+    """Registro por usuario, independiente del directorio de instalación."""
+    return Path.home() / ".dpi" / "crash_log.txt"
+
+
+def ejecutar():
+    """Conserva el código de salida de Qt y señala errores de arranque."""
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+    try:
+        return main()
+    except Exception:
+        import traceback
+        logging.exception("Error fatal de DPI")
+        try:
+            log = _ruta_registro_error()
+            log.parent.mkdir(parents=True, exist_ok=True)
+            with log.open("w", encoding="utf-8") as f:
+                traceback.print_exc(file=f)
+        except OSError:
+            logging.exception("No se pudo escribir el registro de errores")
+        return 1
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except SystemExit:
-        pass
-    except Exception:
-        import traceback
-        log = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crash_log.txt")
-        with open(log, "w") as f:
-            traceback.print_exc(file=f)
-        traceback.print_exc()
+    sys.exit(ejecutar())

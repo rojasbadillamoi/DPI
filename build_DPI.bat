@@ -63,10 +63,6 @@ if exist "dist\DPI" (
     rmdir /s /q "dist\DPI"
     echo %OK% Carpeta dist\DPI eliminada.
 )
-if exist "DPI.spec" (
-    del /q "DPI.spec"
-    echo %OK% Archivo DPI.spec eliminado.
-)
 
 :: --- 4. Construir con PyInstaller ---
 echo.
@@ -83,25 +79,7 @@ echo.
 ::   --hidden-import         : módulos que PyInstaller no detecta automáticamente
 ::   --collect-all pyqtgraph : incluye todos los recursos de pyqtgraph
 
-python -m PyInstaller ^
-    --name "DPI" ^
-    --onedir ^
-    --windowed ^
-    --noconfirm ^
-    --icon "iconos\dpi.ico" ^
-    --add-data "species_profiles.json;." ^
-    --add-data "iconos\dpi.ico;iconos" ^
-    --hidden-import "PyQt6.QtPrintSupport" ^
-    --hidden-import "pyqtgraph.graphicsItems.ViewBox.axisCtrlTemplate_pyqt6" ^
-    --hidden-import "pyqtgraph.graphicsItems.PlotItem.plotConfigTemplate_pyqt6" ^
-    --hidden-import "pyqtgraph.imageview.ImageViewTemplate_pyqt6" ^
-    --hidden-import "pandas._libs.tslibs.np_datetime" ^
-    --hidden-import "pandas._libs.tslibs.nattype" ^
-    --hidden-import "pandas._libs.tslibs.timedeltas" ^
-    --hidden-import "scipy.special._cython_special" ^
-    --collect-all "pyqtgraph" ^
-    --collect-all "cv2" ^
-    main_anillos.py
+python -m PyInstaller --noconfirm DPI.spec
 
 if errorlevel 1 (
     echo.

@@ -11,7 +11,7 @@ Uso:   python3 construir_deb.py [carpeta_de_salida]
 Empaqueta el código de SU PROPIA carpeta, así que basta con dejarlo junto a los
 módulos y correrlo. Requiere dpkg-deb y fakeroot (vienen con Debian/Ubuntu).
 """
-import os, shutil, subprocess, sys
+import shutil, subprocess, sys
 from pathlib import Path
 
 # La carpeta donde vive este script es la que se empaqueta. Antes apuntaba a
@@ -35,7 +35,7 @@ PAQUETE = "dendro-pixel-interface-dpi"
 MANTENEDOR = "Moisés E. Rojas-Badilla <moisese.rojasbadilla@gmail.com>"
 
 sys.path.insert(0, str(ORIGEN))
-from constantes import VERSION, APP_NOMBRE  # noqa
+from dpi.version import VERSION, APP_NOMBRE
 
 RAIZ = SALIDA / f"{PAQUETE}_{VERSION}"
 if RAIZ.exists():
@@ -57,8 +57,9 @@ _FUERA = {"instalar_lanzador_linux.py", "construir_deb.py"}
 modulos = sorted(p.name for p in ORIGEN.glob("*.py") if p.name not in _FUERA)
 for nombre in modulos:
     shutil.copy2(ORIGEN / nombre, LIB / nombre)
+shutil.copytree(ORIGEN / "dpi", LIB / "dpi", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 shutil.copy2(ORIGEN / "species_profiles.json", LIB / "species_profiles.json")
-shutil.copy2(ORIGEN / "dpi.ico", LIB / "dpi.ico")
+shutil.copy2(ORIGEN / "iconos" / "dpi.ico", LIB / "dpi.ico")
 print(f"código: {len(modulos)} módulos")
 
 # ── 2. Íconos ─────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ from PIL import Image
 
 # El PNG grande ha viajado con dos nombres distintos entre carpetas; se prueban
 # ambos y se cae al .ico solo si no hay ninguno.
-_CANDIDATOS = ("dpi_icon.png", "DPI.png", "dpi.png", "dpi.ico")
+_CANDIDATOS = ("dpi_icon.png", "DPI.png", "dpi.png", "iconos/dpi.ico")
 _ruta_icono = next((ORIGEN / n for n in _CANDIDATOS if (ORIGEN / n).exists()), None)
 if _ruta_icono is None:
     sys.exit("No encuentro el ícono: se esperaba alguno de " + ", ".join(_CANDIDATOS))
@@ -224,7 +225,7 @@ METAINFO.mkdir(parents=True, exist_ok=True)
 DEPENDS = ", ".join([
     "python3 (>= 3.10)", "python3-pyqt6", "python3-pyqtgraph", "python3-numpy",
     "python3-pandas", "python3-scipy", "python3-opencv", "python3-pil",
-    "python3-openpyxl", "python3-matplotlib",
+    "python3-openpyxl", "python3-odf", "python3-xlrd", "python3-matplotlib",
 ])
 (DEBIAN / "control").write_text(
     f"Package: {PAQUETE}\n"

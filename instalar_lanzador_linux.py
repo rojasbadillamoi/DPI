@@ -54,7 +54,7 @@ def _dir_apps() -> Path:
 
 
 def _buscar_ico(base: Path) -> Path | None:
-    for rel in ("dpi.ico", "iconos/dpi.ico", "dpi.png", "iconos/dpi.png"):
+    for rel in ("iconos/dpi.ico", "dpi.ico", "dpi.png", "iconos/dpi.png"):
         p = base / rel
         if p.exists():
             return p

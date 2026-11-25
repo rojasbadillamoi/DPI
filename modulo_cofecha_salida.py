@@ -2,11 +2,11 @@
 MoiCedrus — DPI · Informe de texto tipo COFECHA
 ===============================================
 
-Convierte el resultado de `modulo_cofecha.analizar_coleccion` en un informe
+Convierte el resultado de `dpi.ciencia.cofecha.analizar_coleccion` en un informe
 de texto de ancho fijo con las 7 partes del formato clásico, para poder
 leerlo, imprimirlo o compararlo con un .OUT de COFECHA.
 
-Las cifras se calculan en `modulo_cofecha`; acá solo se les da formato.
+Las cifras se calculan en `dpi.ciencia.cofecha`; acá solo se les da formato.
 """
 
 from __future__ import annotations
@@ -159,7 +159,7 @@ def _parte1(res: dict, titulo: str, fecha: str) -> list[str]:
 
 def _VERSION_DPI() -> str:
     try:
-        from constantes import VERSION
+        from dpi.version import VERSION
         return VERSION
     except Exception:
         return ""
